@@ -31,12 +31,22 @@
 	<canvas width="500" height="500" id="testCanvas"></canvas>
 
 	<script>
-		var ctx = document.getElementById('testCanvas').getContext('2d');
-		var image = new Image();
+		var canvas = document.getElementById('testCanvas'),
+			ctx = canvas.getContext('2d'),
+			image = new Image();
 		image.src = 'frames/photo.jpg';
 		var frame = new Image();   // Create new img element
 		frame.onload = function(){
 			// execute drawImage statements here
+			var actualFrameWidth = frame.width,
+				actualFrameHeight = frame.height,
+				aspectRatio = actualFrameWidth / actualFrameHeight,
+				frameWidth = 80,
+				frameHeight = Math.floor(frameWidth / aspectRatio);
+			var x = canvas.width / 2;
+			var y = canvas.height / 2;
+			var degrees = 0;
+
 			/**
 			 * draw the mount
 			 */
@@ -88,39 +98,66 @@
 			/**
 			 * Draw the frame
 			 */
-			ctx.drawImage(frame, 0, 0, 281, 1089, 0, 0, 103, 396);				// left
-			ctx.drawImage(frame, 0, 0, 281, 1089, 0, 396, 103, 396);			// left
+			// left
+			var length = 0;
+			var count = 0;
+			for(count = 0; length < 500; count++){
+				ctx.drawImage(frame, 0, frameHeight*count, frameWidth, frameHeight);
+				length += frameHeight;
+			}
 
-			ctx.drawImage(frame, 281, 0, 281, 1089, 500-103, 0, 103, 396);		// right
-			ctx.drawImage(frame, 281, 0, 281, 1089, 500-103, 396, 103, 396);	// right
+			// right
+			degrees = (Math.PI/180) * 180;
+			ctx.translate(x, y);
+			ctx.rotate(degrees);
+
+			length = 0;
+			for(count = 0; length < 500; count++){
+				ctx.drawImage(frame, -x, -y+(frameHeight*count), frameWidth, frameHeight);
+				length += frameHeight;
+			}
+
+			ctx.rotate(-degrees);
+			ctx.translate(-x, -y);
+
 
 			ctx.save();
+			ctx.strokeStyle = '#f00';
 			ctx.beginPath();
 			ctx.moveTo(0,0);
 			ctx.lineTo(500,0);
-			ctx.lineTo(500-103, 103);
-			ctx.lineTo(103, 103);
-			ctx.lineTo(0,0);
+			ctx.lineTo(500-frameWidth, frameWidth);
+			ctx.lineTo(500-frameWidth, 500-frameWidth);
+			ctx.lineTo(500, 500);
+			ctx.lineTo(0, 500);
+			ctx.lineTo(frameWidth, 500-frameWidth);
+			ctx.lineTo(frameWidth, frameWidth);
 			ctx.closePath();
 			ctx.clip();
-			ctx.drawImage(frame, 562, 0, 1089, 281, 0, 0, 396, 103);	// top
-			ctx.drawImage(frame, 562, 0, 1089, 281, 396, 0, 396, 103);	// top
-			ctx.restore();
 
-			ctx.save();
-			ctx.beginPath();
-			ctx.moveTo(0,500);
-			ctx.lineTo(500,500);
-			ctx.lineTo(500-103, 500-103);
-			ctx.lineTo(103, 500-103);
-			ctx.lineTo(0,500);
-			ctx.closePath();
-			ctx.clip();
-			ctx.drawImage(frame, 562, 281, 1089, 281, 0, 500-103, 396, 103);	// bottom
-			ctx.drawImage(frame, 562, 281, 1089, 281, 396, 500-103, 396, 103);	// bottom
+			degrees = (Math.PI/180) * 90;
+			ctx.translate(x, y);
+			ctx.rotate(degrees);
+
+			// top
+			length = 0;
+			for(count = 0; length < 500; count++){
+				ctx.drawImage(frame, -x, -y+(frameHeight*count), frameWidth, frameHeight);
+				length += frameHeight;
+			}
+
+			// bottom
+			length = 0;
+			for(count = 0; length < 500; count++){
+				ctx.drawImage(frame, x-frameWidth, -y+(frameHeight*count), frameWidth, frameHeight);
+				length += frameHeight;
+			}
+
+			ctx.rotate(-degrees);
+			ctx.translate(-x, -y);
 			ctx.restore();
 		};
-		frame.src = 'frames/frame1.png'; // Set source path
+		frame.src = 'frames/frame1.jpg'; // Set source path
 	</script>
 </body>
 </html>
