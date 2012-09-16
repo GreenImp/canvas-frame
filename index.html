@@ -83,15 +83,16 @@
 				$.extend(photos, options.photos || []);
 
 				// store a collection of all images
-				var imageName = '',													// temporaty storage for image name
-					imageCount = ((frame.file != null) ? 1 : 0) + photos.length,	// count images we need to load
-					loaded = 0;														// count images that have been loaded
+				var imageName = '',																					// temporary storage for image name
+					imageCount = ((frame.file != null) ? 1 : 0) + ((slip.file != null) ? 1 : 0) + photos.length,	// count images we need to load
+					loaded = 0;																						// count images that have been loaded
 
 				// check for a frame image
 				if(frame.file != null){
 					//images[images.length] = frame.file;
 					imageName = frame.file;
 					frame.file = new Image();
+					frame.file.loadCount = 0;
 					frame.file.onload = function(){
 						loaded++;
 
@@ -99,6 +100,14 @@
 							// all images have been loaded
 							postLoadInit();
 						}
+					};
+					frame.file.onerror = function(){
+						if(frame.file.loadCount >= 3){
+							return false;
+						}
+
+						frame.file.src = frame.file.src;
+						frame.file.loadCount++;
 					};
 					frame.file.src = 'frames/' + imageName;
 				}
@@ -108,6 +117,7 @@
 					//images[images.length] = frame.file;
 					imageName = slip.file;
 					slip.file = new Image();
+					slip.file.loadCount = 0;
 					slip.file.onload = function(){
 						loaded++;
 
@@ -116,6 +126,14 @@
 							postLoadInit();
 						}
 					};
+					slip.file.onerror = function(){
+						if(slip.file.loadCount >= 3){
+							return false;
+						}
+
+						slip.file.src = slip.file.src;
+						slip.file.loadCount++;
+					};
 					slip.file.src = 'frames/' + imageName;
 				}
 
@@ -123,6 +141,7 @@
 				for(var i in photos){
 					imageName = photos[i];
 					photos[i] = new Image();
+					photos[i].loadCount = 0;
 					photos[i].onload = function(){
 						loaded++;
 
@@ -130,6 +149,14 @@
 							// all images have been loaded
 							postLoadInit();
 						}
+					};
+					photos[i].onerror = function(){
+						if(photos[i].loadCount >= 3){
+							return false;
+						}
+
+						photos[i].src = photos[i].src;
+						photos[i].loadCount++;
 					};
 					photos[i].src = 'frames/' + imageName;
 				}
