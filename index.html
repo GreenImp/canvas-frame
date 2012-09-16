@@ -233,6 +233,96 @@
 			};
 
 			/**
+			 * Handle funcion for drawing frames (rims & slips)
+			 *
+			 * @param x1
+			 * @param y1
+			 * @param x2
+			 * @param y2
+			 * @param thickness
+			 * @param file
+			 * @param fillColor
+			 */
+			var drawFrame = function(x1, y1, x2, y2, thickness, file, fillColor){
+				if(file !== null){
+					thickness = parseInt(thickness) || 0;
+					var length = 0,	// tracks the current output length of a frame side
+						count = 0,
+						aspectRatio = file.width / file.height,
+						frameHeight = Math.floor(thickness / aspectRatio);
+
+					ctx.save();
+					ctx.beginPath();
+					ctx.moveTo(x1, y1);
+					ctx.lineTo(x2, y1);
+					ctx.lineTo(x2, y2);
+					ctx.lineTo(x1, y2);
+					ctx.closePath();
+					ctx.clip();
+					// repeat the frame down the left-hand side
+					for(count = 0; length < frame.height; count++){
+						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						length += frameHeight;
+					}
+
+					// right
+					var degrees = (Math.PI/180) * 180;
+					ctx.rotate(degrees);
+					length = 0;
+					for(count = 0; length < frame.height; count++){
+						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						length += frameHeight;
+					}
+					ctx.rotate(-degrees);
+					ctx.restore();
+
+
+					ctx.save();
+					ctx.beginPath();
+					ctx.moveTo(x1, y1);
+					ctx.lineTo(x2, y1);
+					ctx.lineTo(x2-thickness, y1 + thickness);
+					ctx.lineTo(x2-thickness, y2-thickness);
+					ctx.lineTo(x2, y2);
+					ctx.lineTo(x1, y2);
+					ctx.lineTo(x1+thickness, y2-thickness);
+					ctx.lineTo(x1+thickness, y1+thickness);
+					ctx.closePath();
+					ctx.clip();
+
+					degrees = (Math.PI/180) * 90;
+					ctx.rotate(degrees);
+					// top
+					length = 0;
+					for(count = 0; length < frame.width; count++){
+						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						length += frameHeight;
+					}
+					ctx.rotate(-degrees*2);
+					// bottom
+					length = 0;
+					for(count = 0; length < frame.width; count++){
+						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						length += frameHeight;
+					}
+					ctx.rotate(degrees);
+					ctx.restore();
+				}else{
+					// frame image doesn't exist - use a colour fill
+					ctx.fillStyle = fillColor || '#eaeaea';
+
+					// top
+					ctx.fillRect(x1, y1, x2-x1, thickness);
+					// bottom
+					ctx.fillRect(x1, y2-thickness, x2-x1, thickness);
+					// left
+					ctx.fillRect(x1, y1, thickness, y2-y1);
+					// right
+					ctx.fillRect(x2-thickness, y1, thickness, y2-y1);
+				}
+			};
+
+			/**
 			 * Draw the backing mount (not including
 			 * any photo sections or photos)
 			 */
@@ -242,179 +332,29 @@
 			};
 
 			/**
-			 * Draw the actual frame itself
+			 * Draw the actual frame rim
 			 */
-			var drawFrame = function(){
-				if(frame.file !== null){
-					var length = 0,	// tracks the current output length of a frame side
-						count = 0,
-						aspectRatio = frame.file.width / frame.file.height,
-						frameHeight = Math.floor(frame.thicknessPx / aspectRatio),
-						frameCoords = {
-							x1:-(frame.width/2),
-							x2:-(frame.width/2) + frame.width,
-							y1:-(frame.height/2),
-							y2:-(frame.height/2)+frame.height
-						};
-
-
-					ctx.save();
-					ctx.beginPath();
-					ctx.moveTo(frameCoords.x1, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1, frameCoords.y2);
-					ctx.closePath();
-					ctx.clip();
-					// repeat the frame down the left-hand side
-					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(frame.file, frameCoords.x1, frameCoords.y1 + (frameHeight*count), frame.thicknessPx, frameHeight);
-						length += frameHeight;
-					}
-
-					// right
-					var degrees = (Math.PI/180) * 180;
-					ctx.rotate(degrees);
-					length = 0;
-					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(frame.file, frameCoords.x1, frameCoords.y1 + (frameHeight*count), frame.thicknessPx, frameHeight);
-						length += frameHeight;
-					}
-					ctx.rotate(-degrees);
-					ctx.restore();
-
-
-					ctx.save();
-					ctx.beginPath();
-					ctx.moveTo(frameCoords.x1, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y1 + frame.thickness);
-					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y2-frame.thickness);
-					ctx.lineTo(frameCoords.x2, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y2-frame.thickness);
-					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y1+frame.thickness);
-					ctx.closePath();
-					ctx.clip();
-
-					degrees = (Math.PI/180) * 90;
-					ctx.rotate(degrees);
-					// top
-					length = 0;
-					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(frame.file, frameCoords.x1, frameCoords.y1 + (frameHeight*count), frame.thicknessPx, frameHeight);
-						length += frameHeight;
-					}
-					ctx.rotate(-degrees*2);
-					// bottom
-					length = 0;
-					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(frame.file, frameCoords.x1, frameCoords.y1 + (frameHeight*count), frame.thicknessPx, frameHeight);
-						length += frameHeight;
-					}
-					ctx.rotate(degrees);
-					ctx.restore();
-				}else{
-					// frame image doesn't exist - use a colour fill
-					ctx.fillStyle = '#eaeaea';
-
-					// left
-					ctx.fillRect(-(frame.width/2), -(frame.height/2), frame.thickness, frame.height);
-					// right
-					ctx.fillRect((frame.width/2) - frame.thickness, -(frame.height/2), frame.thickness, frame.height);
-					// top
-					ctx.fillRect(-(frame.width/2), -(frame.height/2), frame.width, frame.thickness);
-					// bottom
-					ctx.fillRect(-(frame.width/2), (frame.height/2) - frame.thickness, frame.width, frame.thickness);
-				}
+			var drawRim = function(){
+				var frameCoords = {
+					x1:-(frame.width/2),
+					x2:-(frame.width/2) + frame.width,
+					y1:-(frame.height/2),
+					y2:-(frame.height/2)+frame.height
+				};
+				drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file);
 			};
 
 			/**
 			 * Draw the frame slip
 			 */
 			var drawSlip = function(){
-				if(slip.file !== null){
-					var length = 0,	// tracks the current output length of a frame side
-						count = 0,
-						aspectRatio = slip.file.width / slip.file.height,
-						slipHeight = Math.floor(slip.thicknessPx / aspectRatio),
-						frameCoords = {
-							x1:-(frame.width/2)+frame.thickness,
-							x2:-(frame.width/2) + frame.width - frame.thickness,
-							y1:-(frame.height/2) + frame.thickness,
-							y2:-(frame.height/2)+frame.height - frame.thickness
-						};
-
-
-					ctx.save();
-					ctx.beginPath();
-					ctx.moveTo(frameCoords.x1, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1, frameCoords.y2);
-					ctx.closePath();
-					ctx.clip();
-					// repeat the frame down the left-hand side
-					for(count = 0; length < frame.height - (frame.thickness*2); count++){
-						ctx.drawImage(slip.file, frameCoords.x1, frameCoords.y1 + (slipHeight*count), slip.thicknessPx, slipHeight);
-						length += slipHeight;
-					}
-
-					// right
-					var degrees = (Math.PI/180) * 180;
-					ctx.rotate(degrees);
-					length = 0;
-					for(count = 0; length < frame.height - (frame.thickness*2); count++){
-						ctx.drawImage(slip.file, frameCoords.x1, frameCoords.y1 + (slipHeight*count), slip.thicknessPx, slipHeight);
-						length += slipHeight;
-					}
-					ctx.rotate(-degrees);
-					ctx.restore();
-
-
-					ctx.save();
-					ctx.beginPath();
-					ctx.moveTo(frameCoords.x1, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2, frameCoords.y1);
-					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y1 + frame.thickness);
-					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y2-frame.thickness);
-					ctx.lineTo(frameCoords.x2, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1, frameCoords.y2);
-					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y2-frame.thickness);
-					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y1+frame.thickness);
-					ctx.closePath();
-					ctx.clip();
-
-					degrees = (Math.PI/180) * 90;
-					ctx.rotate(degrees);
-					// top
-					length = 0;
-					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(slip.file, frameCoords.x1, frameCoords.y1 + (slipHeight*count), frame.thicknessPx, slipHeight);
-						length += slipHeight;
-					}
-					ctx.rotate(-degrees*2);
-					// bottom
-					length = 0;
-					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(slip.file, frameCoords.x1, frameCoords.y1 + (slipHeight*count), frame.thicknessPx, slipHeight);
-						length += slipHeight;
-					}
-					ctx.rotate(degrees);
-					ctx.restore();
-				}else{
-					// frame image doesn't exist - use a colour fill
-					ctx.fillStyle = '#ddd';
-
-					// left
-					ctx.fillRect(-(frame.width/2) + frame.thickness, -(frame.height/2) + frame.thickness, slip.thickness, frame.height-(frame.thickness*2));
-					// right
-					ctx.fillRect((frame.width/2) - slip.thickness - frame.thickness, -(frame.height/2) + frame.thickness, slip.thickness, frame.height-(frame.thickness*2));
-					// top
-					ctx.fillRect(-(frame.width/2) + frame.thickness, -(frame.height/2) + frame.thickness, frame.width-(frame.thickness*2), slip.thickness);
-					// bottom
-					ctx.fillRect(-(frame.width/2) + frame.thickness, (frame.height/2) - slip.thickness - frame.thickness, frame.width-(frame.thickness*2), slip.thickness);
-				}
+				var frameCoords = {
+					x1:-(frame.width/2)+frame.thickness,
+					x2:-(frame.width/2) + frame.width - frame.thickness,
+					y1:-(frame.height/2) + frame.thickness,
+					y2:-(frame.height/2)+frame.height - frame.thickness
+				};
+				drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, slip.thickness, slip.file, '#ddd');
 			};
 
 			/**
@@ -501,8 +441,10 @@
 					}
 				}
 
-				drawFrame();
+				// draw the frame rim
+				drawRim();
 
+				// draw the frame slip
 				drawSlip();
 			};
 
