@@ -25,13 +25,15 @@
 			box-shadow:-5px 5px 5px #666;
 		}
 	</style>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
 </head>
 
 <body>
 	<canvas width="500" height="500" id="testCanvas"></canvas>
 
 	<script>
-		var canvasSize = {
+		/*var canvasSize = {
 			width:500,
 			height:500
 		};
@@ -86,50 +88,15 @@
 			/**
 			 * draw the mount
 			 */
-			ctx.fillStyle = '#fff';
-			ctx.fillRect(0, 0, 500, 500);
-
-			var x1 = (frameSize.width/2)-(pxSize.width/2)-0.5,
-				x2 = (frameSize.width/2)+(pxSize.width/2)+10+0.5,
-				y1 = (frameSize.height/2)-(pxSize.height/2)-0.5,
-				y2 = (frameSize.height/2)+(pxSize.height/2)+10+0.5;
-			ctx.lineWidth = 1;
-			ctx.strokeStyle = '#eee';
-			ctx.beginPath();
-			ctx.moveTo(x1, y1);
-			ctx.lineTo(x1, y2);
-			ctx.lineTo(x2, y2);
-			ctx.lineTo(x2, y1);
-			ctx.closePath();
-			ctx.stroke();
-
-			ctx.beginPath();
-			ctx.strokeStyle = '#efefef';
-			ctx.lineWidth = 2;
-			x1++;
-			x2--;
-			y1++;
-			y2--;
-			ctx.moveTo(x1, y1);
-			ctx.lineTo(x1, y2);
-			ctx.lineTo(x2, y2);
-			ctx.lineTo(x2, y1);
-			ctx.closePath();
-			ctx.stroke();
-
-			/**
-			 * Draw the image(s)
-			 */
-			x1 += 5;
-			y1 += 5;
-			ctx.drawImage(image, x1, y1, pxSize.width, pxSize.height);
+			//drawMount();
+			//drawImageBlock(image, pxSize.width, pxSize.height, {x:canvas.width/2, y:canvas.height / 2});
 
 
 			/**
 			 * Draw the frame
 			 */
 			// left
-			var length = 0;
+			/*var length = 0;
 			var count = 0;
 			for(count = 0; length < 500; count++){
 				ctx.drawImage(frame, 0, frameHeight*count, frameWidth, frameHeight);
@@ -187,7 +154,372 @@
 			ctx.translate(-x, -y);
 			ctx.restore();
 		};
-		frame.src = 'frames/frame1.jpg'; // Set source path
+		frame.src = 'frames/frame1.jpg'; // Set source path*/
+
+
+		Frame = function(options){
+			var Frame = this,
+				canvas = document.getElementById('testCanvas'),
+				ctx = canvas.getContext('2d'),
+				pxPermm = 1,
+				frame = {		// frame information
+					file:null,		// frame image file
+					thickness:0,	// frame width/thickness in mm
+					thicknessPx:0,	// frame width/thickness in pixels
+					width:0,		// the frame width in pixels
+					height:0		// the frame height in pixels
+				},
+				mount = {		// mount information
+					colour:'#fff',	// background colour
+					border:50,		// the space between the photo and the frame in mm
+					borderPx:0,		// the space between the photo and the frame in pixels
+					sections:[		// mount photo sections
+						[
+							{
+								width:0,		// image width in mm
+								height:0,		// image height in mm
+								widthPx:0,		// image width in pixels
+								heightPx:0		// image height in pixels
+							}
+						]
+					]
+				},
+				photos = [],		// list of photos for the frame
+				centerPoint = {
+					x:canvas.width/2,
+					y:canvas.height / 2
+				};
+
+			/**
+			 * Initialises the frame
+			 */
+			this.init = function(options){
+				// set the user defined options
+				options = options || {};
+				$.extend(frame, options.frame || {});
+				$.extend(mount, options.mount || {});
+				$.extend(photos, options.photos || []);
+
+				// store a collection of all images
+				var imageName = '',													// temporaty storage for image name
+					imageCount = ((frame.file != null) ? 1 : 0) + photos.length,	// count images we need to load
+					loaded = 0;														// count images that have been loaded
+				// check for a frame image
+				if(frame.file != null){
+					//images[images.length] = frame.file;
+					imageName = frame.file;
+					frame.file = new Image();
+					frame.file.onload = function(){
+						loaded++;
+
+						if(loaded == imageCount){
+							// all images have been loaded
+							postLoadInit();
+						}
+					};
+					frame.file.src = 'frames/' + imageName;
+				}
+
+				for(var i in photos){
+					imageName = photos[i];
+					photos[i] = new Image();
+					photos[i].onload = function(){
+						loaded++;
+
+						if(loaded == imageCount){
+							// all images have been loaded
+							postLoadInit();
+						}
+					};
+					photos[i].src = 'frames/' + imageName;
+				}
+			};
+
+			/**
+			 * Starts the actual drawing process
+			 * and calculating te size of the frame
+			 */
+			var postLoadInit = function(){
+				calculateSizes();
+				Frame.draw();
+			};
+
+			/**
+			 * calculate the frame sizes
+			 */
+			var calculateSizes = function(){
+				// we need to calculate the size of the frame, in pixels, from the size in mm
+				// first, calculate the total width/height in mm
+				frame.thicknessPx = frame.thickness*pxPermm;
+				mount.borderPx = mount.border*pxPermm;
+
+				frame.width = (frame.thicknessPx*2) + mount.borderPx;
+				frame.height = (frame.thicknessPx*2) + mount.borderPx;
+
+				// store the row widths
+				var rowWidths = [];
+
+				// loop through each section row
+				var i = 0, j = 0, row = null;
+				for(i in mount.sections){
+					// loop through each section in the row
+					row = mount.sections[i];
+					rowWidths[i] = 0;
+
+					for(j in row){
+						// convert the image width/heights into pixels
+						row[j].widthPx = row[j].width*pxPermm;
+						row[j].heightPx = row[j].height*pxPermm;
+
+						// add them to the frame width/height
+						rowWidths[i] += row[j].widthPx;
+						//frame.width += row[j].widthPx;
+						frame.height += row[j].heightPx;
+
+						// if we are not on the first section of the row add some right padding
+						if(j > 0){
+							rowWidths[i] += mount.borderPx;
+						}
+						// if we are not on the first rown of the sections add some top padding
+						if(i > 0){
+							frame.height += mount.borderPx;
+						}
+					}
+				}
+
+				// ad the width of the widest row to the frame width
+				frame.width += Math.max.apply(Math, rowWidths);
+
+				// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
+				// TODO - change pixel sizes to compensate for the canvas size
+			};
+
+			/**
+			 * Draw the backing mount (not including
+			 * any photo sections or photos)
+			 */
+			var drawMount = function(){
+				ctx.fillStyle = mount.colour;
+				ctx.fillRect(centerPoint.x-(frame.width/2), centerPoint.y-(frame.height/2), frame.width, frame.height);
+			};
+
+			/**
+			 * Draw the actual frame itself
+			 */
+			var drawFrame = function(){
+				if(typeof frame.file == 'object'){
+					var length = 0,	// tracks the current output length of a frame side
+						count = 0,
+						aspectRatio = frame.file.width / frame.file.height,
+						frameHeight = Math.floor(frame.thicknessPx / aspectRatio),
+						frameCoords = {
+							x1:centerPoint.x-(frame.width/2),
+							x2:centerPoint.x-(frame.width/2) + frame.width,
+							y1:centerPoint.y-(frame.height/2),
+							y2:centerPoint.y-(frame.height/2)+frame.height
+						};
+
+
+					ctx.save();
+					ctx.beginPath();
+					ctx.moveTo(frameCoords.x1, frameCoords.y1);
+					ctx.lineTo(frameCoords.x2, frameCoords.y1);
+					ctx.lineTo(frameCoords.x2, frameCoords.y2);
+					ctx.lineTo(frameCoords.x1, frameCoords.y2);
+					ctx.closePath();
+					ctx.clip();
+					// repeat the frame down the left-hand side
+					for(count = 0; length < frame.height; count++){
+						ctx.drawImage(frame.file, frameCoords.x1, frameCoords.y1 + (frameHeight*count), frame.thicknessPx, frameHeight);
+						length += frameHeight;
+					}
+
+					// right
+					var degrees = (Math.PI/180) * 180;
+					ctx.translate(centerPoint.x, centerPoint.y);
+					ctx.rotate(degrees);
+
+					length = 0;
+					for(count = 0; length < frame.height; count++){
+						ctx.drawImage(frame.file, -(frame.width/2), -(frame.height/2)+(frameHeight*count), frame.thicknessPx, frameHeight);
+						length += frameHeight;
+					}
+
+					ctx.rotate(-degrees);
+					ctx.translate(-centerPoint.x, -centerPoint.y);
+					ctx.restore();
+
+
+					ctx.save();
+					ctx.beginPath();
+					ctx.moveTo(frameCoords.x1, frameCoords.y1);
+					ctx.lineTo(frameCoords.x2, frameCoords.y1);
+					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y1 + frame.thickness);
+					ctx.lineTo(frameCoords.x2-frame.thickness, frameCoords.y2-frame.thickness);
+					ctx.lineTo(frameCoords.x2, frameCoords.y2);
+					ctx.lineTo(frameCoords.x1, frameCoords.y2);
+					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y2-frame.thickness);
+					ctx.lineTo(frameCoords.x1+frame.thickness, frameCoords.y1+frame.thickness);
+					ctx.closePath();
+					ctx.clip();
+
+					degrees = (Math.PI/180) * 90;
+					ctx.translate(centerPoint.x, centerPoint.y);
+					ctx.rotate(degrees);
+
+					// top
+					length = 0;
+					for(count = 0; length < frame.width; count++){
+						ctx.drawImage(frame.file, -(frame.height/2), -(frame.width/2)+(frameHeight*count), frame.thicknessPx, frameHeight);
+						length += frameHeight;
+					}
+
+					// bottom
+					length = 0;
+					for(count = 0; length < frame.width; count++){
+						ctx.drawImage(frame.file, (frame.height/2)-frame.thicknessPx, -(frame.width/2)+(frameHeight*count), frame.thicknessPx, frameHeight);
+						length += frameHeight;
+					}
+
+					ctx.rotate(-degrees);
+					ctx.translate(-centerPoint.x, -centerPoint.y);
+					ctx.restore();
+				}else{
+					// frame image doesn't exist - use a colour fill
+					ctx.fillStyle = '#eaeaea';
+
+					// left
+					ctx.fillRect(centerPoint.x - (frame.width/2), centerPoint.y - (frame.height/2), frame.thickness, frame.height);
+					// right
+					ctx.fillRect(centerPoint.x + (frame.width/2) - frame.thickness, centerPoint.y - (frame.height/2), frame.thickness, frame.height);
+					// top
+					ctx.fillRect(centerPoint.x - (frame.width/2), centerPoint.y - (frame.height/2), frame.width, frame.thickness);
+					// bottom
+					ctx.fillRect(centerPoint.x - (frame.width/2), centerPoint.y + (frame.height/2) - frame.thickness, frame.width, frame.thickness);
+				}
+			};
+
+			/**
+			 * draw a mount picture section with the specified
+			 * width and height and originating from the given
+			 * center location.
+			 *
+			 * If image is defined, then it will also draw that.
+			 *
+			 * centerPoint must be an object with the x,y coordinate
+			 * for the center point (relative to the frame) that the
+			 * section will be drawn
+			 * around.
+			 * ie;
+			 * {
+			 *     x:20,
+			 *     y:57
+			 * }
+			 *
+			 * @param width
+			 * @param height
+			 * @param image
+			 */
+			var drawImageBlock = function(width, height, image){
+				// TODO - need to calculate offset, depending on row/column
+				// calculate the starting x/y coordinates
+				var x1 = centerPoint.x-(width/2),
+					x2 = centerPoint.x+(width/2),
+					y1 = centerPoint.y-(height/2),
+					y2 = centerPoint.y+(height/2);
+
+				// fill the image section
+				ctx.fillStyle = '#efefef';
+				ctx.fillRect(x1, y1, x2-x1, y2-y1);
+
+				// draw the image (if one exists)
+				if(typeof image == 'object'){
+					ctx.drawImage(image, x1, y1, width, height);
+				}
+
+				x1 -= 5;
+				x2 += 5;
+				y1 -= 5;
+				y2 += 5;
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = '#efefef';
+				ctx.beginPath();
+				ctx.moveTo(x1, y1);
+				ctx.lineTo(x1, y2);
+				ctx.lineTo(x2, y2);
+				ctx.lineTo(x2, y1);
+				ctx.closePath();
+				ctx.stroke();
+
+				x1--;
+				x2++;
+				y1--;
+				y2++;
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = '#eee';
+				ctx.beginPath();
+				ctx.moveTo(x1, y1);
+				ctx.lineTo(x1, y2);
+				ctx.lineTo(x2, y2);
+				ctx.lineTo(x2, y1);
+				ctx.closePath();
+				ctx.stroke();
+			};
+
+			/**
+			 * Draws all of the frame components;
+			 * Frame, mount, slide, images etc
+			 */
+			this.draw = function(){
+				// draw the mount
+				drawMount();
+
+				// draw the images to the mount
+				var count = 0;
+				for(var i in mount.sections){
+					var row = mount.sections[i];
+					for(var j in row){
+						drawImageBlock(row[j].widthPx, row[j].heightPx, photos[count]);
+					}
+				}
+
+				drawFrame();
+			};
+
+			this.init(options);
+		};
+
+		new Frame({
+			frame:{
+				file:'frame1.jpg',
+				thickness:30
+			},
+			mount:{
+				sections:[
+					[
+						{
+							width:100,
+							height:100
+						},
+						{
+							width:100,
+							height:100
+						}
+					],
+					[
+						{
+							width:100,
+							height:100
+						}
+					]
+				]
+			},
+			photos:[
+				'photo.jpg',
+				'photo.jpg',
+				'photo.jpg'
+			]
+		});
 	</script>
 </body>
 </html>
