@@ -260,21 +260,26 @@
 				var rowWidths = [];
 
 				// loop through each section row
-				var i = 0, j = 0, row = null;
+				var i = 0, j = 0;
 				for(i in mount.sections){
-					// loop through each section in the row
-					row = mount.sections[i];
+					// define the current row
+					var row = mount.sections[i];
+					// start the row widths count, for this row
 					rowWidths[i] = 0;
 
+					// defines the row height
+					var rowHeight = 0;
+
+					// loop through each section in the row
 					for(j in row){
 						// convert the image width/heights into pixels
 						row[j].widthPx = row[j].width*pxPermm;
 						row[j].heightPx = row[j].height*pxPermm;
 
-						// add them to the frame width/height
+						// add the photo width to the row width
 						rowWidths[i] += row[j].widthPx;
-						//frame.width += row[j].widthPx;
-						frame.height += row[j].heightPx;
+						// if the photo height is larger than the previous photo (for this row) set it as the row height
+						rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
 
 						// if we are not on the first section of the row add some right padding
 						if(j > 0){
@@ -285,6 +290,9 @@
 							frame.height += mount.borderPx;
 						}
 					}
+
+					// add the row height
+					frame.height += rowHeight;
 				}
 
 				// ad the width of the widest row to the frame width
