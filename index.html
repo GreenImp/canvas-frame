@@ -20,7 +20,6 @@
 		canvas#testCanvas{
 			display:block;;
 			margin:20px auto;
-			border:1px solid #f00;
 		}
 	</style>
 
@@ -28,7 +27,7 @@
 </head>
 
 <body>
-	<canvas width="1000" height="3000" id="testCanvas"></canvas>
+	<canvas width="800" height="1000" id="testCanvas"></canvas>
 
 	<script>
 		Frame = function(options){
@@ -79,6 +78,9 @@
 				$.extend(slip, options.slip || {});
 				$.extend(mount, options.mount || {});
 				$.extend(photos, options.photos || []);
+
+				// check that colour hasn't been specified in American-English
+				mount.colour = mount.color || mount.colour;
 
 				// store a collection of all images
 				var imageName = '',																					// temporary storage for image name
@@ -396,11 +398,12 @@
 			 */
 			var drawSlip = function(){
 				var frameCoords = {
-					x1:-(frame.width/2)+frame.thickness,
-					x2:-(frame.width/2) + frame.width - frame.thickness,
-					y1:-(frame.height/2) + frame.thickness,
-					y2:-(frame.height/2)+frame.height - frame.thickness
+					x1:Math.floor(-(frame.width/2)+frame.thickness),
+					x2:Math.ceil(-(frame.width/2) + frame.width - frame.thickness),
+					y1:Math.floor(-(frame.height/2) + frame.thickness),
+					y2:Math.ceil(-(frame.height/2) + frame.height - frame.thickness)
 				};
+				console.log(frameCoords);
 				drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, slip.thickness, slip.file, '#ddd');
 			};
 
@@ -539,35 +542,20 @@
 
 		new Frame({
 			frame:{
-				file:'frame1.jpg',
-				thickness:30
-			},
-			slip:{
 				file:'frame1.png',
 				thickness:30
 			},
+			slip:{
+				file:'frame1.jpg',
+				thickness:30
+			},
 			mount:{
-				colour:'#f0f',
 				sections:[
 					[
 						{
 							width:100,
 							height:100
 						},
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						}
-					],
-					[
 						{
 							width:100,
 							height:100
