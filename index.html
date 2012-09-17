@@ -10,11 +10,6 @@
 
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=IE8">
 
-	<!--<script type="text/javascript" src="js/excanvas.compiled.js"></script>-->
-	<!--[if lte IE 8]>
-	<script type="text/javascript" src="js/flashcanvas/flashcanvas.js"></script>
-	<![endif]-->
-
 	<style>
 		html{
 			width:100%;
@@ -38,6 +33,11 @@
 		}
 	</style>
 
+	<script src="js/flashcanvas/canvas2png.js">	</script>
+	<!--[if lte IE 8]>
+	<script type="text/javascript" src="js/flashcanvas/flashcanvas.js"></script>
+	<![endif]-->
+
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
 </head>
 
@@ -45,6 +45,10 @@
 	<canvas id="testCanvas"></canvas>
 
 	<script>
+		window.FlashCanvasOptions = {
+			disableContextMenu:true
+		};
+
 		Frame = function(options){
 			var Frame = this,
 				canvas = document.getElementById('testCanvas'),
@@ -85,6 +89,10 @@
 					y:0
 				};
 
+			// image handles
+			var loaded = 0,
+				imageCount;
+
 
 			/**
 			 * Initialises the frame
@@ -111,9 +119,12 @@
 				ctx.translate(centerPoint.x, centerPoint.y);
 
 				// store a collection of all images
-				var imageName = '',																										// temporary storage for image name
-					imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + photos.length,	// count images we need to load
-					loaded = 0;																											// count images that have been loaded
+				var imageName = '';	// temporary storage for image name
+
+				// count images we need to load
+				imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + photos.length;
+				// count images that have been loaded
+				loaded = 0;
 
 				// check for a frame image
 				if(typeof frame.file == 'string'){
@@ -121,23 +132,19 @@
 					imageName = frame.file;
 					frame.file = new Image();
 					frame.file.loadCount = 0;
-					frame.file.onload = function(){
-						loaded++;
 
-						if(loaded == imageCount){
-							// all images have been loaded
-							postLoadInit();
-						}
-					};
+					// error handler
 					frame.file.onerror = function(){
-						if(frame.file.loadCount >= 3){
-							return false;
-						}
-
-						frame.file.src = frame.file.src;
-						frame.file.loadCount++;
+						imageErrorCallback(frame.file);
 					};
-					frame.file.src = 'frames/' + imageName;
+
+					if(typeof FlashCanvas != 'undefined'){
+						frame.file.src = 'frames/' + imageName;
+						ctx.loadImage(frame.file, imageLoadCallback());
+					}else{
+						frame.file.onload = imageLoadCallback;
+						frame.file.src = 'frames/' + imageName;
+					}
 				}
 
 				// check for a slip image
@@ -146,23 +153,19 @@
 					imageName = slip.file;
 					slip.file = new Image();
 					slip.file.loadCount = 0;
-					slip.file.onload = function(){
-						loaded++;
 
-						if(loaded == imageCount){
-							// all images have been loaded
-							postLoadInit();
-						}
-					};
+					// error handler
 					slip.file.onerror = function(){
-						if(slip.file.loadCount >= 3){
-							return false;
-						}
-
-						slip.file.src = slip.file.src;
-						slip.file.loadCount++;
+						imageErrorCallback(slip.file);
 					};
-					slip.file.src = 'frames/' + imageName;
+
+					if(typeof FlashCanvas != 'undefined'){
+						slip.file.src = 'frames/' + imageName;
+						ctx.loadImage(slip.file, imageLoadCallback());
+					}else{
+						slip.file.onload = imageLoadCallback;
+						slip.file.src = 'frames/' + imageName;
+					}
 				}
 
 				// check for photos
@@ -171,23 +174,19 @@
 						imageName = photos[i];
 						photos[i] = new Image();
 						photos[i].loadCount = 0;
-						photos[i].onload = function(){
-							loaded++;
 
-							if(loaded == imageCount){
-								// all images have been loaded
-								postLoadInit();
-							}
-						};
+						// error handler
 						photos[i].onerror = function(){
-							if(photos[i].loadCount >= 3){
-								return false;
-							}
-
-							photos[i].src = photos[i].src;
-							photos[i].loadCount++;
+							imageErrorCallback(photos[i]);
 						};
-						photos[i].src = 'frames/' + imageName;
+
+						if(typeof FlashCanvas != 'undefined'){
+							photos[i].src = 'frames/' + imageName;
+							ctx.loadImage(photos[i], imageLoadCallback());
+						}else{
+							photos[i].onload = imageLoadCallback;
+							photos[i].src = 'frames/' + imageName;
+						}
 					}else{
 						imageCount--;
 					}
@@ -205,6 +204,32 @@
 			var postLoadInit = function(){
 				calculateSizes();
 				Frame.draw();
+			};
+
+			/**
+			 * Callback for successful image loads
+			 */
+			var imageLoadCallback = function(){
+				loaded++;
+				if(loaded == imageCount){
+					// all images have been loaded
+					postLoadInit();
+				}
+			};
+
+			/**
+			 * Callback for failed image loads
+			 *
+			 * @param file
+			 * @return {Boolean}
+			 */
+			var imageErrorCallback = function(file){
+				if(file.loadCount >= 3){
+					return false;
+				}
+
+				file.src = file.src;
+				file.loadCount++;
 			};
 
 			/**
@@ -567,15 +592,32 @@
 
 				// draw the frame rim
 				drawRim();
-
 				// draw the frame slip
 				drawSlip();
+			};
+
+			/**
+			 * Saves the frame as an image
+			 */
+			this.save = function(){
+				if(typeof canvas2png != 'undefined'){
+					try{
+						canvas2png(canvas);
+					}catch(e){
+						alert('an error has occurred'+"\n"+ e	);
+					}
+				}else{
+					// no image save functionality exists
+					alert('No method for saving the image exists');
+				}
 			};
 
 			this.init(options);
 		};
 
 		$(window).load(function(){
+			$('#testCanvas').width('100%').height('100%');
+
 			var myFrame = new Frame({
 				frame:{
 					file:'frame1.jpg',
@@ -634,9 +676,11 @@
 				]
 			});
 
-			$(window).resize(function(){
-				myFrame.init();
-			});
+			if(typeof FlashCanvas == 'undefined'){
+				$(window).resize(function(){
+					myFrame.init();
+				});
+			}
 		});
 	</script>
 </body>
