@@ -20,8 +20,6 @@
 		canvas#testCanvas{
 			display:block;;
 			margin:20px auto;
-			width:500px;
-			height:500px;
 			box-shadow:-5px 5px 5px #666;
 		}
 	</style>
@@ -183,8 +181,8 @@
 				slip.thicknessPx = slip.thickness*pxPermm;
 				mount.borderPx = mount.border*pxPermm;
 
-				frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx;
-				frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx;
+				frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
+				frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
 
 				// store the row widths
 				var rowWidths = [];
@@ -215,14 +213,10 @@
 						if(j > 0){
 							rowWidths[i] += mount.borderPx;
 						}
-						// if we are not on the first rown of the sections add some top padding
-						if(i > 0){
-							frame.height += mount.borderPx;
-						}
 					}
 
 					// add the row height
-					frame.height += rowHeight;
+					frame.height += rowHeight + ((i > 0) ? mount.borderPx : 0);
 				}
 
 				// ad the width of the widest row to the frame width
@@ -230,6 +224,33 @@
 
 				// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
 				// TODO - change pixel sizes to compensate for the canvas size
+				if((frame.width > canvas.width) || (frame.height > canvas.height)){
+					// the frame output size is larger than the canvas - calculate a resize ratio
+
+					// calculate the highest percent decrease for the frame to fit within the canvas
+					var percent = Math.max((frame.width - canvas.width) / frame.width, (frame.height - canvas.height) / frame.height);
+					console.log(percent);
+
+					// now resize every element by the percent
+					frame.thickness = frame.thickness-(frame.thickness*percent);
+					slip.thickness = slip.thickness-(slip.thickness*percent);
+					mount.border = mount.border-(mount.border*percent);
+
+					// loop through each section row
+					for(i in mount.sections){
+						// define the current row
+						row = mount.sections[i];
+
+						// loop through each section in the row
+						for(j in row){
+							// convert the image width/heights into pixels
+							row[j].width = row[j].width-(row[j].width*percent);
+							row[j].height = row[j].height-(row[j].height*percent);
+						}
+					}
+
+					calculateSizes();
+				}
 			};
 
 			/**
@@ -383,10 +404,6 @@
 			var drawImageBlock = function(width, height, x, y, image){
 				// TODO - need to calculate offset, depending on row/column
 				// calculate the starting x/y coordinates
-				/*var x1 = -(width/2) + (xOffset || 0),
-					x2 = (width/2) + (xOffset || 0),
-					y1 = -(height/2) + (yOffset || 0),
-					y2 = (height/2) + (yOffset || 0);*/
 				var x1 = (typeof x == 'number') ? x : -(width/2),
 					y1 = (typeof y == 'number') ? y : -(height/2),
 					x2 = x1 + width,
@@ -461,10 +478,10 @@
 						// if the photo height is larger than the previous photo (for this row) set it as the row height
 						rowHeight = (mount.sections[i][j].heightPx > rowHeight) ? mount.sections[i][j].heightPx : rowHeight;
 					}
-					dimensions[i].height += rowHeight + ((i > 0) ? mount.borderPx : 0);
+					dimensions[i].height += rowHeight;
 
 					width = (dimensions[i].width > width) ? dimensions[i].width : width;
-					height += dimensions[i].height;
+					height += dimensions[i].height + ((i > 0) ? mount.borderPx : 0);
 				}
 
 
@@ -508,6 +525,14 @@
 			mount:{
 				sections:[
 					[
+						{
+							width:100,
+							height:100
+						},
+						{
+							width:100,
+							height:100
+						},
 						{
 							width:100,
 							height:100
