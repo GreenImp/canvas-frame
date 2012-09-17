@@ -260,7 +260,7 @@
 				frame.width += Math.max.apply(Math, rowWidths);
 
 				// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
-				var widthDifference = canvas.width - Math.round(frame.width),
+				/*var widthDifference = canvas.width - Math.round(frame.width),
 					heightDifference = canvas.height - Math.round(frame.height),
 					allowableDifference = 5;
 				if((widthDifference < -allowableDifference) || (heightDifference < -allowableDifference)){
@@ -315,7 +315,7 @@
 
 					// force a re-calculation of the frame sizes
 					calculateSizes();
-				}
+				}*/
 			};
 
 			/**
@@ -474,17 +474,13 @@
 
 				// fill the image section
 				ctx.fillStyle = '#efefef';
-				ctx.fillRect(x1, y1, x2-x1, y2-y1);
+				ctx.fillRect(x1+mount.innerBorderPx, y1+mount.innerBorderPx, x2-x1-mount.innerBorderPx, y2-y1-mount.innerBorderPx);
 
 				// draw the image (if one exists)
 				if(typeof image == 'object'){
-					ctx.drawImage(image, x1, y1, width, height);
+					//ctx.drawImage(image, x1, y1, width, height);
 				}
 
-				x1 -= mount.innerBorderPx;
-				x2 += mount.innerBorderPx;
-				y1 -= mount.innerBorderPx;
-				y2 += mount.innerBorderPx;
 				ctx.lineWidth = 1;
 				ctx.strokeStyle = '#efefef';
 				ctx.beginPath();
@@ -540,17 +536,19 @@
 					var rowHeight = 0;
 
 					for(j in mount.sections[i]){
-						dimensions[i].width += mount.sections[i][j].widthPx + ((j > 0) ? mount.borderPx : 0);
+						dimensions[i].width += mount.sections[i][j].widthPx + (mount.innerBorderPx*2) + ((j > 0) ? mount.borderPx : 0);
 						// if the photo height is larger than the previous photo (for this row) set it as the row height
 						rowHeight = (mount.sections[i][j].heightPx > rowHeight) ? mount.sections[i][j].heightPx : rowHeight;
 					}
-					dimensions[i].height += rowHeight;
+					dimensions[i].height += rowHeight + (mount.innerBorderPx*2);
 
 					width = (dimensions[i].width > width) ? dimensions[i].width : width;
 					height += dimensions[i].height + ((i > 0) ? mount.borderPx : 0);
 				}
 
 
+				ctx.fillStyle = '#f00';
+				ctx.fillRect(-width/2, -height/2, width, height);
 				// now loop through (again) and output the photos
 				yOffset = -height/2;
 				for(i in mount.sections){
@@ -561,11 +559,11 @@
 					for(j in row){
 						drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
 
-						xOffset += row[j].widthPx + mount.borderPx;
+						xOffset += row[j].widthPx + mount.borderPx + (mount.innerBorderPx*2);
 						count++;
 					}
 
-					yOffset += dimensions[i].height + mount.borderPx;
+					yOffset += dimensions[i].height + mount.borderPx + (mount.innerBorderPx*2);
 				}
 
 
@@ -579,7 +577,7 @@
 			this.init(options);
 		};
 
-		$(document).load(function(){
+		$(window).load(function(){
 			var myFrame = new Frame({
 				frame:{
 					file:'frame1.jpg',
@@ -629,18 +627,18 @@
 				},
 				photos:[
 					'photo.jpg',
+					'photo2.jpg',
 					'photo.jpg',
+					'photo2.jpg',
 					'photo.jpg',
-					'photo.jpg',
-					'photo.jpg',
-					'photo.jpg',
+					'photo2.jpg',
 					'photo.jpg'
 				]
 			});
-		});
 
-		$(window).resize(function(){
-			myFrame.init();
+			$(window).resize(function(){
+				myFrame.init();
+			});
 		});
 	</script>
 </body>
