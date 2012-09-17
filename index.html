@@ -10,7 +10,10 @@
 
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=IE8">
 
-	<!--[if lte IE 8]><script type="text/javascript" src="js/excanvas.compiled.js"></script><![endif]-->
+	<!--<script type="text/javascript" src="js/excanvas.compiled.js"></script>-->
+	<!--[if lte IE 8]>
+	<script type="text/javascript" src="js/flashcanvas/flashcanvas.js"></script>
+	<![endif]-->
 
 	<style>
 		html{
@@ -576,62 +579,64 @@
 			this.init(options);
 		};
 
-		var myFrame = new Frame({
-			frame:{
-				file:'frame1.jpg',
-				thickness:30
-			},
-			slip:{
-				file:'frame1.png',
-				thickness:30
-			},
-			mount:{
-				sections:[
-					[
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						}
-					],
-					[
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						},
-						{
-							width:100,
-							height:100
-						}
-					],
-					[
-						{
-							width:100,
-							height:100
-						}
+		$(document).load(function(){
+			var myFrame = new Frame({
+				frame:{
+					file:'frame1.jpg',
+					thickness:30
+				},
+				slip:{
+					file:'frame1.png',
+					thickness:30
+				},
+				mount:{
+					sections:[
+						[
+							{
+								width:100,
+								height:100
+							},
+							{
+								width:100,
+								height:100
+							},
+							{
+								width:100,
+								height:100
+							}
+						],
+						[
+							{
+								width:100,
+								height:100
+							},
+							{
+								width:100,
+								height:100
+							},
+							{
+								width:100,
+								height:100
+							}
+						],
+						[
+							{
+								width:100,
+								height:100
+							}
+						]
 					]
+				},
+				photos:[
+					'photo.jpg',
+					'photo.jpg',
+					'photo.jpg',
+					'photo.jpg',
+					'photo.jpg',
+					'photo.jpg',
+					'photo.jpg'
 				]
-			},
-			photos:[
-				'photo.jpg',
-				'photo.jpg',
-				'photo.jpg',
-				'photo.jpg',
-				'photo.jpg',
-				'photo.jpg',
-				'photo.jpg'
-			]
+			});
 		});
 
 		$(window).resize(function(){
