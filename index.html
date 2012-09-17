@@ -11,15 +11,25 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=IE8">
 
 	<style>
+		html{
+			width:100%;
+			height:100%;
+		}
+
 		body{
 			margin:0;
 			padding:0;
+			width:100%;
+			height:100%;
 			background:#C1D3EE;
 		}
 
 		canvas#testCanvas{
-			display:block;;
-			margin:20px auto;
+			display:block;
+			width:100%;
+			min-width:50px;
+			height:100%;
+			min-height:50px;
 		}
 	</style>
 
@@ -27,7 +37,7 @@
 </head>
 
 <body>
-	<canvas width="800" height="1000" id="testCanvas"></canvas>
+	<canvas id="testCanvas"></canvas>
 
 	<script>
 		Frame = function(options){
@@ -51,6 +61,8 @@
 					colour:'#fff',	// background colour
 					border:50,		// the space between the photo and the frame in mm
 					borderPx:0,		// the space between the photo and the frame in pixels
+					innerBorder:5,	// the space between the photo and the photo border in mm
+					innerBorderPx:0,// the space between the photo and the photo border in pixels
 					sections:[		// mount photo sections
 						[
 							{
@@ -64,9 +76,10 @@
 				},
 				photos = [],		// list of photos for the frame
 				centerPoint = {
-					x:canvas.width/2,
-					y:canvas.height / 2
+					x:0,
+					y:0
 				};
+
 
 			/**
 			 * Initialises the frame
@@ -79,16 +92,26 @@
 				$.extend(mount, options.mount || {});
 				$.extend(photos, options.photos || []);
 
-				// check that colour hasn't been specified in American-English
+				// check if the colour has been specified in American-English
 				mount.colour = mount.color || mount.colour;
 
+				// set the canvas width/height correctly
+				canvas.width = canvas.offsetWidth;
+				canvas.height = canvas.offsetHeight;
+				centerPoint = {
+					x:canvas.width / 2,
+					y:canvas.height / 2
+				};
+
+				ctx.translate(centerPoint.x, centerPoint.y);
+
 				// store a collection of all images
-				var imageName = '',																					// temporary storage for image name
-					imageCount = ((frame.file != null) ? 1 : 0) + ((slip.file != null) ? 1 : 0) + photos.length,	// count images we need to load
-					loaded = 0;																						// count images that have been loaded
+				var imageName = '',																										// temporary storage for image name
+					imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + photos.length,	// count images we need to load
+					loaded = 0;																											// count images that have been loaded
 
 				// check for a frame image
-				if(frame.file != null){
+				if(typeof frame.file == 'string'){
 					//images[images.length] = frame.file;
 					imageName = frame.file;
 					frame.file = new Image();
@@ -113,7 +136,7 @@
 				}
 
 				// check for a slip image
-				if(slip.file != null){
+				if(typeof slip.file == 'string'){
 					//images[images.length] = frame.file;
 					imageName = slip.file;
 					slip.file = new Image();
@@ -139,29 +162,35 @@
 
 				// check for photos
 				for(var i in photos){
-					imageName = photos[i];
-					photos[i] = new Image();
-					photos[i].loadCount = 0;
-					photos[i].onload = function(){
-						loaded++;
+					if(typeof photos[i] == 'string'){
+						imageName = photos[i];
+						photos[i] = new Image();
+						photos[i].loadCount = 0;
+						photos[i].onload = function(){
+							loaded++;
 
-						if(loaded == imageCount){
-							// all images have been loaded
-							postLoadInit();
-						}
-					};
-					photos[i].onerror = function(){
-						if(photos[i].loadCount >= 3){
-							return false;
-						}
+							if(loaded == imageCount){
+								// all images have been loaded
+								postLoadInit();
+							}
+						};
+						photos[i].onerror = function(){
+							if(photos[i].loadCount >= 3){
+								return false;
+							}
 
-						photos[i].src = photos[i].src;
-						photos[i].loadCount++;
-					};
-					photos[i].src = 'frames/' + imageName;
+							photos[i].src = photos[i].src;
+							photos[i].loadCount++;
+						};
+						photos[i].src = 'frames/' + imageName;
+					}else{
+						imageCount--;
+					}
 				}
 
-				ctx.translate(centerPoint.x, centerPoint.y);
+				if(imageCount == 0){
+					postLoadInit();
+				}
 			};
 
 			/**
@@ -182,6 +211,7 @@
 				frame.thicknessPx = frame.thickness*pxPermm;
 				slip.thicknessPx = slip.thickness*pxPermm;
 				mount.borderPx = mount.border*pxPermm;
+				mount.innerBorderPx = mount.innerBorder*pxPermm;
 
 				frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
 				frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
@@ -207,9 +237,9 @@
 						row[j].heightPx = row[j].height*pxPermm;
 
 						// add the photo width to the row width
-						rowWidths[i] += row[j].widthPx;
+						rowWidths[i] += row[j].widthPx + (mount.innerBorderPx*2);
 						// if the photo height is larger than the previous photo (for this row) set it as the row height
-						rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
+						rowHeight = (row[j].heightPx+(mount.innerBorderPx*2) > rowHeight) ? row[j].heightPx+(mount.innerBorderPx*2) : rowHeight;
 
 						// if we are not on the first section of the row add some right padding
 						if(j > 0){
@@ -238,6 +268,7 @@
 					frame.thickness -= frame.thickness*percent;
 					slip.thickness -= slip.thickness*percent;
 					mount.border -= mount.border*percent;
+					mount.innerBorder -= mount.innerBorder*percent;
 
 					// loop through each section row
 					for(i in mount.sections){
@@ -263,6 +294,7 @@
 					frame.thickness += frame.thickness*percent;
 					slip.thickness += slip.thickness*percent;
 					mount.border += mount.border*percent;
+					mount.innerBorder += mount.innerBorder*percent;
 
 					// loop through each section row
 					for(i in mount.sections){
@@ -310,8 +342,8 @@
 					ctx.clip();
 					// repeat the frame down the left-hand side
 					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(file, x1, Math.floor(y1 + (frameHeight*count)), thickness, frameHeight);
-						length += frameHeight;
+						ctx.drawImage(file, x1, Math.floor(y1 + ((frameHeight-1)*count)), thickness, frameHeight);
+						length += frameHeight-1;
 					}
 
 					// right
@@ -319,8 +351,8 @@
 					ctx.rotate(degrees);
 					length = 0;
 					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(file, x1, Math.floor(y1 + (frameHeight*count)), thickness, frameHeight);
-						length += frameHeight;
+						ctx.drawImage(file, x1, Math.floor(y1 + ((frameHeight-1)*count)), thickness, frameHeight);
+						length += frameHeight-1;
 					}
 					ctx.rotate(-degrees);
 					ctx.restore();
@@ -403,7 +435,6 @@
 					y1:Math.floor(-(frame.height/2) + frame.thickness),
 					y2:Math.ceil(-(frame.height/2) + frame.height - frame.thickness)
 				};
-				console.log(frameCoords);
 				drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, slip.thickness, slip.file, '#ddd');
 			};
 
@@ -445,10 +476,10 @@
 					ctx.drawImage(image, x1, y1, width, height);
 				}
 
-				x1 -= 5;
-				x2 += 5;
-				y1 -= 5;
-				y2 += 5;
+				x1 -= mount.innerBorderPx;
+				x2 += mount.innerBorderPx;
+				y1 -= mount.innerBorderPx;
+				y2 += mount.innerBorderPx;
 				ctx.lineWidth = 1;
 				ctx.strokeStyle = '#efefef';
 				ctx.beginPath();
@@ -459,19 +490,22 @@
 				ctx.closePath();
 				ctx.stroke();
 
-				x1--;
-				x2++;
-				y1--;
-				y2++;
-				ctx.lineWidth = 1;
-				ctx.strokeStyle = '#eee';
-				ctx.beginPath();
-				ctx.moveTo(x1, y1);
-				ctx.lineTo(x1, y2);
-				ctx.lineTo(x2, y2);
-				ctx.lineTo(x2, y1);
-				ctx.closePath();
-				ctx.stroke();
+				// only output the second line if the canvas is big enough
+				if((frame.width > 300) && (frame.height > 300)){
+					x1--;
+					x2++;
+					y1--;
+					y2++;
+					ctx.lineWidth = 1;
+					ctx.strokeStyle = '#eee';
+					ctx.beginPath();
+					ctx.moveTo(x1, y1);
+					ctx.lineTo(x1, y2);
+					ctx.lineTo(x2, y2);
+					ctx.lineTo(x2, y1);
+					ctx.closePath();
+					ctx.stroke();
+				}
 			};
 
 			/**
@@ -540,17 +574,32 @@
 			this.init(options);
 		};
 
-		new Frame({
+		var myFrame = new Frame({
 			frame:{
-				file:'frame1.png',
-				thickness:30
-			},
-			slip:{
 				file:'frame1.jpg',
 				thickness:30
 			},
+			slip:{
+				file:'frame1.png',
+				thickness:30
+			},
 			mount:{
+				color:'#f00',
 				sections:[
+					[
+						{
+							width:100,
+							height:100
+						},
+						{
+							width:100,
+							height:100
+						},
+						{
+							width:100,
+							height:100
+						}
+					],
 					[
 						{
 							width:100,
@@ -576,8 +625,16 @@
 			photos:[
 				'photo.jpg',
 				'photo.jpg',
+				'photo.jpg',
+				'photo.jpg',
+				'photo.jpg',
+				'photo.jpg',
 				'photo.jpg'
 			]
+		});
+
+		$(window).resize(function(){
+			myFrame.init();
 		});
 	</script>
 </body>
