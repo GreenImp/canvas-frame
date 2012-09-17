@@ -295,14 +295,16 @@
 					// top
 					length = 0;
 					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						//ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, y1, x1 + (frameHeight*count), thickness, frameHeight);
 						length += frameHeight;
 					}
 					ctx.rotate(-degrees*2);
 					// bottom
 					length = 0;
 					for(count = 0; length < frame.width; count++){
-						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						//ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, y1, x1 + (frameHeight*count), thickness, frameHeight);
 						length += frameHeight;
 					}
 					ctx.rotate(degrees);
@@ -378,13 +380,17 @@
 			 * @param height
 			 * @param image
 			 */
-			var drawImageBlock = function(width, height, image){
+			var drawImageBlock = function(width, height, x, y, image){
 				// TODO - need to calculate offset, depending on row/column
 				// calculate the starting x/y coordinates
-				var x1 = -(width/2),
-					x2 = width/2,
-					y1 = -(height/2),
-					y2 = height/2;
+				/*var x1 = -(width/2) + (xOffset || 0),
+					x2 = (width/2) + (xOffset || 0),
+					y1 = -(height/2) + (yOffset || 0),
+					y2 = (height/2) + (yOffset || 0);*/
+				var x1 = (typeof x == 'number') ? x : -(width/2),
+					y1 = (typeof y == 'number') ? y : -(height/2),
+					x2 = x1 + width,
+					y2 = y1 + height;
 
 				// fill the image section
 				ctx.fillStyle = '#efefef';
@@ -433,13 +439,52 @@
 				drawMount();
 
 				// draw the images to the mount
-				var count = 0;
-				for(var i in mount.sections){
-					var row = mount.sections[i];
-					for(var j in row){
-						drawImageBlock(row[j].widthPx, row[j].heightPx, photos[count]);
+				var count = 0,		// the image count (for referencing photos)
+					xOffset = 0,	// the x axis offset
+					yOffset = 0,	// the y axis offset
+					dimensions = [],
+					width = 0,
+					height = 0;
+
+				// loop through and calculate the sizes for everything
+				var i = 0, j = 0;
+				for(i in mount.sections){
+					dimensions[i] = {
+						width:0,
+						height:0
+					};
+
+					var rowHeight = 0;
+
+					for(j in mount.sections[i]){
+						dimensions[i].width += mount.sections[i][j].widthPx + ((j > 0) ? mount.borderPx : 0);
+						// if the photo height is larger than the previous photo (for this row) set it as the row height
+						rowHeight = (mount.sections[i][j].heightPx > rowHeight) ? mount.sections[i][j].heightPx : rowHeight;
 					}
+					dimensions[i].height += rowHeight + ((i > 0) ? mount.borderPx : 0);
+
+					width = (dimensions[i].width > width) ? dimensions[i].width : width;
+					height += dimensions[i].height;
 				}
+
+
+				// now loop through (again) and output the photos
+				yOffset = -height/2;
+				for(i in mount.sections){
+					var row = mount.sections[i];
+
+					xOffset = -width/2;
+
+					for(j in row){
+						drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
+
+						xOffset += row[j].widthPx + mount.borderPx;
+						count++;
+					}
+
+					yOffset += dimensions[i].height + mount.borderPx;
+				}
+
 
 				// draw the frame rim
 				drawRim();
@@ -462,6 +507,16 @@
 			},
 			mount:{
 				sections:[
+					[
+						{
+							width:100,
+							height:100
+						},
+						{
+							width:100,
+							height:100
+						}
+					],
 					[
 						{
 							width:100,
