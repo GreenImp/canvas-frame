@@ -20,7 +20,7 @@
 		canvas#testCanvas{
 			display:block;;
 			margin:20px auto;
-			box-shadow:-5px 5px 5px #666;
+			border:1px solid #f00;
 		}
 	</style>
 
@@ -28,7 +28,7 @@
 </head>
 
 <body>
-	<canvas width="500" height="500" id="testCanvas"></canvas>
+	<canvas width="1000" height="3000" id="testCanvas"></canvas>
 
 	<script>
 		Frame = function(options){
@@ -223,18 +223,19 @@
 				frame.width += Math.max.apply(Math, rowWidths);
 
 				// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
-				// TODO - change pixel sizes to compensate for the canvas size
-				if((frame.width > canvas.width) || (frame.height > canvas.height)){
+				var widthDifference = canvas.width - Math.round(frame.width),
+					heightDifference = canvas.height - Math.round(frame.height),
+					allowableDifference = 5;
+				if((widthDifference < -allowableDifference) || (heightDifference < -allowableDifference)){
 					// the frame output size is larger than the canvas - calculate a resize ratio
 
-					// calculate the highest percent decrease for the frame to fit within the canvas
+					// calculate the highest percent decrease (width|height) for the frame to fit within the canvas
 					var percent = Math.max((frame.width - canvas.width) / frame.width, (frame.height - canvas.height) / frame.height);
-					console.log(percent);
 
 					// now resize every element by the percent
-					frame.thickness = frame.thickness-(frame.thickness*percent);
-					slip.thickness = slip.thickness-(slip.thickness*percent);
-					mount.border = mount.border-(mount.border*percent);
+					frame.thickness -= frame.thickness*percent;
+					slip.thickness -= slip.thickness*percent;
+					mount.border -= mount.border*percent;
 
 					// loop through each section row
 					for(i in mount.sections){
@@ -243,12 +244,37 @@
 
 						// loop through each section in the row
 						for(j in row){
-							// convert the image width/heights into pixels
-							row[j].width = row[j].width-(row[j].width*percent);
-							row[j].height = row[j].height-(row[j].height*percent);
+							row[j].width -= row[j].width*percent;
+							row[j].height -= row[j].height*percent;
 						}
 					}
 
+					// force a re-calculation of the frame sizes
+					calculateSizes();
+				}else if((widthDifference > allowableDifference) && (heightDifference > allowableDifference)){
+					// the frame output size is smaller than the canvas - calculate the resize ratio
+
+					// calculate the lowest percent increase (width|height) for the frame to fit within the canvas
+					var percent = Math.min((canvas.width - frame.width) / frame.width, (canvas.height - frame.height) / frame.height);
+
+					// now resize every element by the percent
+					frame.thickness += frame.thickness*percent;
+					slip.thickness += slip.thickness*percent;
+					mount.border += mount.border*percent;
+
+					// loop through each section row
+					for(i in mount.sections){
+						// define the current row
+						row = mount.sections[i];
+
+						// loop through each section in the row
+						for(j in row){
+							row[j].width += row[j].width*percent;
+							row[j].height += row[j].height*percent;
+						}
+					}
+
+					// force a re-calculation of the frame sizes
 					calculateSizes();
 				}
 			};
@@ -282,7 +308,7 @@
 					ctx.clip();
 					// repeat the frame down the left-hand side
 					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, x1, Math.floor(y1 + (frameHeight*count)), thickness, frameHeight);
 						length += frameHeight;
 					}
 
@@ -291,7 +317,7 @@
 					ctx.rotate(degrees);
 					length = 0;
 					for(count = 0; length < frame.height; count++){
-						ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, x1, Math.floor(y1 + (frameHeight*count)), thickness, frameHeight);
 						length += frameHeight;
 					}
 					ctx.rotate(-degrees);
@@ -316,16 +342,14 @@
 					// top
 					length = 0;
 					for(count = 0; length < frame.width; count++){
-						//ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
-						ctx.drawImage(file, y1, x1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, y1, Math.floor(x1 + (frameHeight*count)), thickness, frameHeight);
 						length += frameHeight;
 					}
 					ctx.rotate(-degrees*2);
 					// bottom
 					length = 0;
 					for(count = 0; length < frame.width; count++){
-						//ctx.drawImage(file, x1, y1 + (frameHeight*count), thickness, frameHeight);
-						ctx.drawImage(file, y1, x1 + (frameHeight*count), thickness, frameHeight);
+						ctx.drawImage(file, y1, Math.floor(x1 + (frameHeight*count)), thickness, frameHeight);
 						length += frameHeight;
 					}
 					ctx.rotate(degrees);
@@ -523,6 +547,7 @@
 				thickness:30
 			},
 			mount:{
+				colour:'#f0f',
 				sections:[
 					[
 						{
