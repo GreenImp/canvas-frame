@@ -111,7 +111,7 @@ Frame = function(options){
 
 			// error handler
 			frame.file.onerror = function(){
-				imageErrorCallback(frame.file);
+				imageErrorCallback(frame);
 			};
 
 			if(typeof FlashCanvas != 'undefined'){
@@ -132,7 +132,7 @@ Frame = function(options){
 
 			// error handler
 			slip.file.onerror = function(){
-				imageErrorCallback(slip.file);
+				imageErrorCallback(slip);
 			};
 
 			if(typeof FlashCanvas != 'undefined'){
@@ -153,7 +153,7 @@ Frame = function(options){
 
 			// error handler
 			mount.file.onerror = function(){
-				imageErrorCallback(mount.file);
+				imageErrorCallback(mount);
 			};
 
 			if(typeof FlashCanvas != 'undefined'){
@@ -174,7 +174,7 @@ Frame = function(options){
 
 				// error handler
 				photos[i].onerror = function(){
-					imageErrorCallback(photos[i]);
+					imageErrorCallback({file:photos[i]});
 				};
 
 				if(typeof FlashCanvas != 'undefined'){
@@ -221,15 +221,19 @@ Frame = function(options){
 	 * @return {Boolean}
 	 */
 	var imageErrorCallback = function(file){
-		if(file.loadCount >= 3){
+		if(file.file.loadCount >= 3){
 			// we have reached the max failed attempts
+			// not sure whether we should throw up an error here or just carry on loading
+			// for now, mark it as loaded and set the image to null
+			file.file = null;
+			imageLoadCallback();
 			return false;
 		}
 
 		// re-define the image src, to force it to-reload
-		file.src = file.src;
+		file.file.src = file.file.src;
 		// increment the load count
-		file.loadCount++;
+		file.file.loadCount++;
 	};
 
 	/**
@@ -474,10 +478,10 @@ Frame = function(options){
 	 */
 	var drawRim = function(){
 		var frameCoords = {
-			x1:-(frame.width/2),
-			x2:-(frame.width/2) + frame.width,
-			y1:-(frame.height/2),
-			y2:-(frame.height/2)+frame.height
+			x1:Math.floor(-(frame.width/2)),
+			x2:Math.ceil(-(frame.width/2) + frame.width),
+			y1:Math.floor(-(frame.height/2)),
+			y2:Math.ceil(-(frame.height/2)+frame.height)
 		};
 		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file);
 	};
