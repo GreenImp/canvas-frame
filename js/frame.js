@@ -294,7 +294,6 @@ Frame = function(userOptions){
 	 */
 	var calculateSizes = function(){
 		// we need to calculate the size of the frame, in pixels, from the size in mm
-		// first, calculate the total width/height in mm
 		frame.thicknessPx = frame.thickness*options.pxPerMM;
 		slip.thicknessPx = slip.thickness*options.pxPerMM;
 
@@ -354,7 +353,7 @@ Frame = function(userOptions){
 			frame.height += rowHeight + ((i > 0) ? mount.imagePaddingPx.row : 0);
 		}
 
-		// ad the width of the widest row to the frame width
+		// add the width of the widest row to the frame width
 		frame.width += Math.max.apply(Math, rowWidths);
 
 		// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
@@ -721,7 +720,7 @@ Frame = function(userOptions){
 	this.save = function(){
 		if(typeof canvas2png != 'undefined'){
 			try{
-				canvas2png(canvas);
+				canvas2png(canvas, {name:'frame'});
 			}catch(e){
 				alert('Error saving image, please try again');
 			}

@@ -34,15 +34,35 @@
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Force download
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="canvas.png"');
+    //header('Content-Type: application/octet-stream');
 
-    if (isset($_POST['dataurl'])) {
+	if(isset($_POST['name']) && (trim($_POST['name']) != '')){
+		if(get_magic_quotes_gpc()){
+			$_POST['name'] = stripslashes($_POST['name']);
+		}
+
+		$name = preg_replace('/[^a-z0-9\-_\. ]/', '', str_replace(array('.png', ' '), array('', '-'), trim($_POST['name'])));
+	}else{
+		$name = 'canvas';
+	}
+
+    header('Content-Disposition: attachment; filename="' . $name . '.png"');
+
+    if(isset($_POST['dataurl'])){
         // Decode the base64-encoded data
         $data = $_POST['dataurl'];
-        $data = substr($data, strpos($data, ',') + 1);
-        echo base64_decode($data);
-    } else {
+        $data = base64_decode(substr($data, strpos($data, ',') + 1));
+
+		// get the file size
+		if(function_exists('mb_strlen')){
+			header('Content-length: ' . strlen($data));
+		}else{
+			// if mb_strlen doesn't exist don't output a size as it may be wrong and break the image
+			//header('Content-length: ' . mb_strlen($data));
+		}
+
+        echo $data;
+    }else{
         // Output the raw data
         readfile('php://input');
     }
