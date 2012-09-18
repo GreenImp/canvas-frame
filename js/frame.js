@@ -35,8 +35,11 @@ Frame = function(userOptions){
 				left:0,
 				right:0
 			},
-			imagePadding:50,	// padding between photos in mm (only used if frame contains multiple photos
-			imagePaddingPx:0,	// padding between photos in pixels
+			imagePadding:50,	// padding between photos in mm (only used if frame contains multiple photos - can be a numerical value or object)
+			imagePaddingPx:{	// padding between photos in pixels (is an object)
+				row:0,
+				column:0
+			},
 			innerBorder:5,		// the space between the photo and the photo border in mm
 			innerBorderPx:0,	// the space between the photo and the photo border in pixels
 			sections:[			// mount photo sections
@@ -295,6 +298,7 @@ Frame = function(userOptions){
 		frame.thicknessPx = frame.thickness*options.pxPerMM;
 		slip.thicknessPx = slip.thickness*options.pxPerMM;
 
+		// check the mount border
 		mount.border = (typeof mount.border == 'object') ? mount.border : {top:mount.border, bottom:mount.border, left:mount.border, right:mount.border};
 		mount.borderPx = {
 			top:mount.border.top * options.pxPerMM,
@@ -303,7 +307,12 @@ Frame = function(userOptions){
 			right:mount.border.right * options.pxPerMM
 		};
 
-		mount.imagePaddingPx = mount.imagePadding*options.pxPerMM;
+		// check the image padding (this is the gap between images)
+		mount.imagePadding = (typeof mount.imagePadding == 'object') ? mount.imagePadding : {row:mount.imagePadding, column:mount.imagePadding};
+		mount.imagePaddingPx = {
+			row:mount.imagePadding.row*options.pxPerMM,
+			column:mount.imagePadding.column*options.pxPerMM
+		};
 
 		mount.innerBorderPx = mount.innerBorder*options.pxPerMM;
 
@@ -337,12 +346,12 @@ Frame = function(userOptions){
 
 				// if we are not on the first section of the row add some right padding
 				if(j > 0){
-					rowWidths[i] += mount.imagePaddingPx;
+					rowWidths[i] += mount.imagePaddingPx.column;
 				}
 			}
 
 			// add the row height
-			frame.height += rowHeight + ((i > 0) ? mount.imagePaddingPx : 0);
+			frame.height += rowHeight + ((i > 0) ? mount.imagePaddingPx.row : 0);
 		}
 
 		// ad the width of the widest row to the frame width
@@ -367,7 +376,8 @@ Frame = function(userOptions){
 			mount.border.left -= mount.border.left*percent;
 			mount.border.right -= mount.border.right*percent;
 
-			mount.imagePadding -= mount.imagePadding*percent;
+			mount.imagePadding.row -= mount.imagePadding.row*percent;
+			mount.imagePadding.column -= mount.imagePadding.column*percent;
 			mount.innerBorder -= mount.innerBorder*percent;
 
 			// check for a mount image
@@ -406,7 +416,8 @@ Frame = function(userOptions){
 			mount.border.left += mount.border.left*percent;
 			mount.border.right += mount.border.right*percent;
 
-			mount.imagePadding += mount.imagePadding*percent;
+			mount.imagePadding.row += mount.imagePadding.row*percent;
+			mount.imagePadding.column += mount.imagePadding.column*percent;
 			mount.innerBorder += mount.innerBorder*percent;
 
 			// check for a mount image
@@ -687,13 +698,13 @@ Frame = function(userOptions){
 			for(var j in row){
 				drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
 
-				xOffset += row[j].widthPx + mount.imagePaddingPx + (mount.innerBorderPx*2);
+				xOffset += row[j].widthPx + mount.imagePaddingPx.column + (mount.innerBorderPx*2);
 				count++;
 
 				rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
 			}
 
-			yOffset += rowHeight + (mount.innerBorderPx*2) + mount.imagePaddingPx;
+			yOffset += rowHeight + (mount.innerBorderPx*2) + mount.imagePaddingPx.row;
 		}
 
 
