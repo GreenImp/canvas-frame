@@ -672,7 +672,17 @@ Frame = function(userOptions){
 			var row = mount.sections[i],
 				rowHeight = 0;
 
-			var xOffset = -(width/2) + mount.borderPx.left;
+			var xOffset = 0;
+			if(row.length == 1){
+				// only one picture in this row - horizontally center it
+
+				// get the width of the row
+				var rowWidth = width - mount.borderPx.left - mount.borderPx.right;
+				xOffset = -(width/2) + mount.borderPx.left + ((rowWidth/2) - (row[0].widthPx/2));
+			}else{
+				// more than one image on the row
+				xOffset = -(width/2) + mount.borderPx.left;
+			}
 
 			for(var j in row){
 				drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
