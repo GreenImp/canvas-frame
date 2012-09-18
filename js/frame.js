@@ -27,6 +27,7 @@ Frame = function(options){
 			thicknessPx:0	// slip width/thickness in pixels
 		},
 		mount = {		// mount information
+			file:null,		// background file, if applicable
 			colour:'#fff',	// background colour
 			border:50,		// the space between the photo and the frame in mm
 			borderPx:0,		// the space between the photo and the frame in pixels
@@ -97,7 +98,7 @@ Frame = function(options){
 		var imageName = '';	// temporary storage for image name
 
 		// count images we need to load
-		imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + photos.length;
+		imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + ((typeof mount.file == 'string') ? 1 : 0) + photos.length;
 		// count images that have been loaded
 		loaded = 0;
 
@@ -140,6 +141,27 @@ Frame = function(options){
 			}else{
 				slip.file.onload = imageLoadCallback;
 				slip.file.src = 'frames/' + imageName;
+			}
+		}
+
+		// check for a mount image
+		if(typeof mount.file == 'string'){
+			//images[images.length] = frame.file;
+			imageName = mount.file;
+			mount.file = new Image();
+			mount.file.loadCount = 0;
+
+			// error handler
+			mount.file.onerror = function(){
+				imageErrorCallback(mount.file);
+			};
+
+			if(typeof FlashCanvas != 'undefined'){
+				mount.file.src = 'frames/' + imageName;
+				ctx.loadImage(mount.file, imageLoadCallback());
+			}else{
+				mount.file.onload = imageLoadCallback;
+				mount.file.src = 'frames/' + imageName;
 			}
 		}
 
@@ -200,10 +222,13 @@ Frame = function(options){
 	 */
 	var imageErrorCallback = function(file){
 		if(file.loadCount >= 3){
+			// we have reached the max failed attempts
 			return false;
 		}
 
+		// re-define the image src, to force it to-reload
 		file.src = file.src;
+		// increment the load count
 		file.loadCount++;
 	};
 
@@ -413,8 +438,35 @@ Frame = function(options){
 	 * any photo sections or photos)
 	 */
 	var drawMount = function(){
+		var x1 = -(frame.width/2),
+			x2 = x1 + frame.width,
+			y1 = -(frame.height/2),
+			y2 = frame.height;
+
 		ctx.fillStyle = mount.colour;
-		ctx.fillRect(-(frame.width/2), -(frame.height/2), frame.width, frame.height);
+		ctx.fillRect(x1, y1, x2-x1, y2-y1);
+
+		if((mount.file != null) && (typeof mount.file == 'object')){
+			ctx.save();
+			ctx.moveTo(x1, y1);
+			ctx.lineTo(x1, y2);
+			ctx.lineTo(x2, y2);
+			ctx.lineTo(x2, y1);
+			ctx.lineTo(x1, y1);
+			ctx.clip();
+
+			var height = 0;
+			for(var i = 0; height < frame.height; i++){
+				var width = 0;
+				for(var j = 0; width < frame.width; j++){
+					ctx.drawImage(mount.file, Math.floor(x1 + ((mount.file.width-1)*j)), Math.floor(y1 + ((mount.file.height-1)*i)), mount.file.width, mount.file.height);
+					width += mount.file.width-1;
+				}
+				height += mount.file.height-1;
+			}
+
+			ctx.restore();
+		}
 	};
 
 	/**
@@ -465,7 +517,6 @@ Frame = function(options){
 	 * @param image
 	 */
 	var drawImageBlock = function(width, height, x, y, image){
-		// TODO - need to calculate offset, depending on row/column
 		// calculate the starting x/y coordinates
 		var x1 = (typeof x == 'number') ? x : -(width/2),
 			y1 = (typeof y == 'number') ? y : -(height/2),
