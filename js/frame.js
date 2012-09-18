@@ -94,6 +94,30 @@ Frame = function(options){
 		ctx.translate(centerPoint.x, centerPoint.y);
 
 
+		// if jquery.contextMenu and canvas2png is included, add our context menu
+		if(jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
+			// add the context menu
+			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
+								'<li class="save"><a href="#save">Save Image</a></li>' +
+							'</ul>');
+			// set up the functionality
+			$(canvas)
+					// ensure that canvas doesn't already have contextMenu
+					.destroyContextMenu()
+					// add contextMenu
+					.contextMenu(
+						{
+							menu:'canvasMenu'
+						},
+						function(action, el, pos){
+							if(action == 'save'){
+								Frame.save();
+							}
+						}
+					);
+		}
+
+
 		// store a collection of all images
 		var imageName = '';	// temporary storage for image name
 
@@ -659,25 +683,6 @@ Frame = function(options){
 
 	// run some JQuery only functionality
 	if(jQuery){
-		// if jquery.contextMenu and canvas2png is included, add our context menu
-		if($.fn.contextMenu && (typeof canvas2png != 'undefined')){
-			// add the context menu
-			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
-								'<li class="save"><a href="#save">Save</a></li>' +
-							'</ul>');
-			// set up the funcionality
-			$(canvas).contextMenu(
-				{
-					menu:'canvasMenu'
-				},
-				function(action, el, pos){
-					if(action == 'save'){
-						Frame.save();
-					}
-				}
-			);
-		}
-
 		// if we're not using the flash replacement, run the re-size functionality
 		// flashcanvas can't handle this as it makes the browser un-responsive and doesn't resize anyway.
 		if(typeof FlashCanvas == 'undefined'){
