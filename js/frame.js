@@ -304,6 +304,13 @@ Frame = function(options){
 			mount.border -= mount.border*percent;
 			mount.innerBorder -= mount.innerBorder*percent;
 
+			// check for a mount image
+			if(mount.file != null){
+				// mount file exists
+				mount.file.width -= Math.round(mount.file.width*percent);
+				mount.file.height -= Math.round(mount.file.height*percent);
+			}
+
 			// loop through each section row
 			for(i in mount.sections){
 				// define the current row
@@ -329,6 +336,13 @@ Frame = function(options){
 			slip.thickness += slip.thickness*percent;
 			mount.border += mount.border*percent;
 			mount.innerBorder += mount.innerBorder*percent;
+
+			// check for a mount image
+			if(mount.file != null){
+				// mount file exists
+				mount.file.width += Math.round(mount.file.width*percent);
+				mount.file.height += Math.round(mount.file.height*percent);
+			}
 
 			// loop through each section row
 			for(i in mount.sections){
@@ -450,7 +464,7 @@ Frame = function(options){
 		ctx.fillStyle = mount.colour;
 		ctx.fillRect(x1, y1, x2-x1, y2-y1);
 
-		if((mount.file != null) && (typeof mount.file == 'object')){
+		if(mount.file != null){
 			ctx.save();
 			ctx.moveTo(x1, y1);
 			ctx.lineTo(x1, y2);
