@@ -4,7 +4,7 @@
  * @version 1
  */
 
-Frame = function(options){
+Frame = function(userOptions){
 	// disable right-click context menu for flashcanvas
 	window.FlashCanvasOptions = {
 		disableContextMenu:true
@@ -13,7 +13,6 @@ Frame = function(options){
 	var Frame = this,
 		canvas = null,
 		ctx = null,
-		pxPermm = 1,
 		frame = {		// frame information
 			file:null,		// frame image file
 			thickness:0,	// frame width/thickness in mm
@@ -27,13 +26,20 @@ Frame = function(options){
 			thicknessPx:0	// slip width/thickness in pixels
 		},
 		mount = {		// mount information
-			file:null,		// background file, if applicable
-			colour:'#fff',	// background colour
-			border:50,		// the space between the photo and the frame in mm
-			borderPx:0,		// the space between the photo and the frame in pixels
-			innerBorder:5,	// the space between the photo and the photo border in mm
-			innerBorderPx:0,// the space between the photo and the photo border in pixels
-			sections:[		// mount photo sections
+			file:null,			// background file, if applicable
+			colour:'#fff',		// background colour
+			border:50,			// the space between the photo and the frame in mm (can be a numerical value or object)
+			borderPx:{			// the space between the photo and the frame in pixels (is an object)
+				top:0,
+				bottom:0,
+				left:0,
+				right:0
+			},
+			imagePadding:50,	// padding between photos in mm (only used if frame contains multiple photos
+			imagePaddingPx:0,	// padding between photos in pixels
+			innerBorder:5,		// the space between the photo and the photo border in mm
+			innerBorderPx:0,	// the space between the photo and the photo border in pixels
+			sections:[			// mount photo sections
 				[
 					{
 						width:0,		// image width in mm
@@ -48,7 +54,13 @@ Frame = function(options){
 		centerPoint = {
 			x:0,
 			y:0
-		};
+		},
+		defaultOptions = {
+			pxPerMM:1,
+			allowZoom:true,
+			allowSave:true
+		},
+		options = {};
 
 	// image handles
 	var loaded = 0,
@@ -58,13 +70,13 @@ Frame = function(options){
 	/**
 	 * Initialises the frame
 	 */
-	this.init = function(options){
+	this.init = function(userOptions){
 		// set the user defined options
-		options = options || {};
-		$.extend(frame, options.frame || {});
-		$.extend(slip, options.slip || {});
-		$.extend(mount, options.mount || {});
-		$.extend(photos, options.photos || []);
+		userOptions = userOptions || {};
+		$.extend(frame, userOptions.frame || {});
+		$.extend(slip, userOptions.slip || {});
+		$.extend(mount, userOptions.mount || {});
+		$.extend(photos, userOptions.photos || []);
 
 		// check if the colour has been specified in American-English
 		mount.colour = mount.color || mount.colour;
@@ -74,10 +86,10 @@ Frame = function(options){
 		if(canvas == null){
 			if(jQuery){
 				// jQuery exists - use it
-				canvas = ((options.canvas instanceof jQuery) ? options.canvas : $(options.canvas)).get(0);
+				canvas = ((userOptions.canvas instanceof jQuery) ? userOptions.canvas : $(userOptions.canvas)).get(0);
 			}else{
 				// jQuery doesn't exist - assume canvas is an ID
-				canvas = document.getElementById(options.canvas);
+				canvas = document.getElementById(userOptions.canvas);
 			}
 			ctx = canvas.getContext('2d');
 		}
@@ -93,9 +105,18 @@ Frame = function(options){
 		// define the center of the canvas as coordinate 0,0
 		ctx.translate(centerPoint.x, centerPoint.y);
 
+		// remove any unwanted option variables
+		delete userOptions.frame;
+		delete userOptions.slip;
+		delete userOptions.mount;
+		delete userOptions.photos;
+		delete userOptions.canvas;
+		// set the options
+		options = $.extend(defaultOptions, userOptions || {});
 
-		// if jquery.contextMenu and canvas2png is included, add our context menu
-		if(jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
+
+		// if allowSave and jquery.contextMenu and canvas2png is included, add our context menu
+		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
 			// add the context menu
 			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
 								'<li class="save"><a href="#save">Save Image</a></li>' +
@@ -115,6 +136,11 @@ Frame = function(options){
 							}
 						}
 					);
+		}
+
+		// if allowZoom we need to add zoom functionality
+		if(options.allowZoom){
+			// TODO - add click handler to the canvas to show larger/zoomed version of the canvas
 		}
 
 
@@ -266,13 +292,23 @@ Frame = function(options){
 	var calculateSizes = function(){
 		// we need to calculate the size of the frame, in pixels, from the size in mm
 		// first, calculate the total width/height in mm
-		frame.thicknessPx = frame.thickness*pxPermm;
-		slip.thicknessPx = slip.thickness*pxPermm;
-		mount.borderPx = mount.border*pxPermm;
-		mount.innerBorderPx = mount.innerBorder*pxPermm;
+		frame.thicknessPx = frame.thickness*options.pxPerMM;
+		slip.thicknessPx = slip.thickness*options.pxPerMM;
 
-		frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
-		frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + (mount.borderPx*2);
+		mount.border = (typeof mount.border == 'object') ? mount.border : {top:mount.border, bottom:mount.border, left:mount.border, right:mount.border};
+		mount.borderPx = {
+			top:mount.border.top * options.pxPerMM,
+			bottom:mount.border.bottom * options.pxPerMM,
+			left:mount.border.left * options.pxPerMM,
+			right:mount.border.right * options.pxPerMM
+		};
+
+		mount.imagePaddingPx = mount.imagePadding*options.pxPerMM;
+
+		mount.innerBorderPx = mount.innerBorder*options.pxPerMM;
+
+		frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx.left + mount.borderPx.right;
+		frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx.top + mount.borderPx.bottom;
 
 		// store the row widths
 		var rowWidths = [];
@@ -291,8 +327,8 @@ Frame = function(options){
 			// loop through each section in the row
 			for(j in row){
 				// convert the image width/heights into pixels
-				row[j].widthPx = row[j].width*pxPermm;
-				row[j].heightPx = row[j].height*pxPermm;
+				row[j].widthPx = row[j].width*options.pxPerMM;
+				row[j].heightPx = row[j].height*options.pxPerMM;
 
 				// add the photo width to the row width
 				rowWidths[i] += row[j].widthPx + (mount.innerBorderPx*2);
@@ -301,12 +337,12 @@ Frame = function(options){
 
 				// if we are not on the first section of the row add some right padding
 				if(j > 0){
-					rowWidths[i] += mount.borderPx;
+					rowWidths[i] += mount.imagePaddingPx;
 				}
 			}
 
 			// add the row height
-			frame.height += rowHeight + ((i > 0) ? mount.borderPx : 0);
+			frame.height += rowHeight + ((i > 0) ? mount.imagePaddingPx : 0);
 		}
 
 		// ad the width of the widest row to the frame width
@@ -325,7 +361,13 @@ Frame = function(options){
 			// now resize every element by the percent
 			frame.thickness -= frame.thickness*percent;
 			slip.thickness -= slip.thickness*percent;
-			mount.border -= mount.border*percent;
+
+			mount.border.top -= mount.border.top*percent;
+			mount.border.bottom -= mount.border.bottom*percent;
+			mount.border.left -= mount.border.left*percent;
+			mount.border.right -= mount.border.right*percent;
+
+			mount.imagePadding -= mount.imagePadding*percent;
 			mount.innerBorder -= mount.innerBorder*percent;
 
 			// check for a mount image
@@ -358,7 +400,13 @@ Frame = function(options){
 			// now resize every element by the percent
 			frame.thickness += frame.thickness*percent;
 			slip.thickness += slip.thickness*percent;
-			mount.border += mount.border*percent;
+
+			mount.border.top += mount.border.top*percent;
+			mount.border.bottom += mount.border.bottom*percent;
+			mount.border.left += mount.border.left*percent;
+			mount.border.right += mount.border.right*percent;
+
+			mount.imagePadding += mount.imagePadding*percent;
 			mount.innerBorder += mount.innerBorder*percent;
 
 			// check for a mount image
@@ -610,56 +658,38 @@ Frame = function(options){
 		// draw the mount
 		drawMount();
 
+
 		// draw the images to the mount
-		var count = 0,		// the image count (for referencing photos)
-			xOffset = 0,	// the x axis offset
-			yOffset = 0,	// the y axis offset
-			dimensions = [],
-			width = 0,
-			height = 0;
 
-		// loop through and calculate the sizes for everything
-		var i = 0, j = 0;
-		for(i in mount.sections){
-			dimensions[i] = {
-				width:0,
-				height:0
-			};
+		// calculate the inner frame dimensions
+		var width = frame.width - (frame.thicknessPx*2) - (slip.thickness*2),
+			height = frame.height - (frame.thicknessPx*2) - (slip.thickness*2);
 
-			var rowHeight = 0;
+		// loop through and output the photos
+		var count = 0,	// the image count (for referencing photos)
+			yOffset = -(height/2) + mount.borderPx.top;
+		for(var i in mount.sections){
+			var row = mount.sections[i],
+				rowHeight = 0;
 
-			for(j in mount.sections[i]){
-				dimensions[i].width += mount.sections[i][j].widthPx + (mount.innerBorderPx*2) + ((j > 0) ? mount.borderPx : 0);
-				// if the photo height is larger than the previous photo (for this row) set it as the row height
-				rowHeight = (mount.sections[i][j].heightPx > rowHeight) ? mount.sections[i][j].heightPx : rowHeight;
-			}
-			dimensions[i].height += rowHeight + (mount.innerBorderPx*2);
+			var xOffset = -(width/2) + mount.borderPx.left;
 
-			width = (dimensions[i].width > width) ? dimensions[i].width : width;
-			height += dimensions[i].height + ((i > 0) ? mount.borderPx : 0);
-		}
-
-
-		// now loop through (again) and output the photos
-		yOffset = -height/2;
-		for(i in mount.sections){
-			var row = mount.sections[i];
-
-			xOffset = -width/2;
-
-			for(j in row){
+			for(var j in row){
 				drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
 
-				xOffset += row[j].widthPx + mount.borderPx + (mount.innerBorderPx*2);
+				xOffset += row[j].widthPx + mount.imagePaddingPx + (mount.innerBorderPx*2);
 				count++;
+
+				rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
 			}
 
-			yOffset += dimensions[i].height + mount.borderPx;
+			yOffset += rowHeight + (mount.innerBorderPx*2) + mount.imagePaddingPx;
 		}
 
 
 		// draw the frame rim
 		drawRim();
+
 		// draw the frame slip
 		drawSlip();
 	};
@@ -694,5 +724,5 @@ Frame = function(options){
 
 
 	// initialise the plugin
-	this.init(options);
+	this.init(userOptions);
 };

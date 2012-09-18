@@ -25,14 +25,14 @@
 	background-position:6px center;
 	background-repeat:no-repeat;
 	background-color:#eee;
-	background-color:rgba(238, 238, 238, 0.9);
+	background-color:rgba(238, 238, 238, 0.85);
 	outline:none;
 }
 
 .contextMenu li.hover a{
 	color:#fff;
 	background-color:#3399ff;
-	background-color:rgba(51, 153, 255, 0.9);
+	background-color:rgba(51, 153, 255, 0.85);
 }
 
 .contextMenu li.disabled a{
