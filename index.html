@@ -58,26 +58,32 @@
 
 			var myFrame = new Frame({
 				canvas:$('#testCanvas'),
-				frame:{
+				/*frame:{
 					file:'frame1.jpg',
 					thickness:30
 				},
 				slip:{
 					file:'frame1.png',
 					thickness:30
-				},
+				},*/
 				mount:{
 					//file:'04.png',
 					//color:'#efece1',
-					border:{
-						top:150,
-						bottom:50,
-						left:50,
-						right:150
-					},
+					//border:50,
+					layers:[
+						{
+							//file:'04.png',
+							color:'#efece1',
+							padding:50
+						},
+						{
+							colour:'#0f0',
+							padding:10
+						}
+					],
 					imagePadding:{row:50, column:75},
 					sections:[
-						[
+						/*[
 							{
 								width:100,
 								height:100
@@ -100,15 +106,15 @@
 								width:100,
 								height:100
 							},*/
-							{
+							/*{
 								width:100,
 								height:100
 							}
-						],
+						],*/
 						[
 							{
-								width:200,
-								height:300
+								width:300,
+								height:200
 							}
 						]
 					]

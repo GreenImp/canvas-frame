@@ -33,37 +33,44 @@
  */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Force download
-    //header('Content-Type: application/octet-stream');
-
 	if(isset($_POST['name']) && (trim($_POST['name']) != '')){
+		// a file name has been specified - use it
+
 		if(get_magic_quotes_gpc()){
-			$_POST['name'] = stripslashes($_POST['name']);
+		// magic quotes enabled - damn boy! Why such a shitty set-up?! disable them now!
+		// in the mean-time, let's strip the slashes
+		$_POST['name'] = stripslashes($_POST['name']);
 		}
 
+		// replace any invalid characters
 		$name = preg_replace('/[^a-z0-9\-_\. ]/', '', str_replace(array('.png', ' '), array('', '-'), trim($_POST['name'])));
 	}else{
+		// no name specified - set default
 		$name = 'canvas';
 	}
 
-    header('Content-Disposition: attachment; filename="' . $name . '.png"');
+	// set the required header information
+	header('Content-Type: application/octet-stream');							// force download
+	header('Content-Disposition: attachment; filename="' . $name . '.png"');	// tell the browser that it is an attachement and define its name
 
-    if(isset($_POST['dataurl'])){
-        // Decode the base64-encoded data
-        $data = $_POST['dataurl'];
-        $data = base64_decode(substr($data, strpos($data, ',') + 1));
+
+	if(isset($_POST['dataurl'])){
+		// Decode the base64-encoded data
+		$data = $_POST['dataurl'];
+		$data = base64_decode(substr($data, strpos($data, ',') + 1));
 
 		// get the file size
 		if(function_exists('mb_strlen')){
 			header('Content-length: ' . strlen($data));
 		}else{
 			// if mb_strlen doesn't exist don't output a size as it may be wrong and break the image
-			//header('Content-length: ' . mb_strlen($data));
+			// uncomment below to use strlen
+			//header('Content-length: ' . strlen($data));
 		}
 
-        echo $data;
-    }else{
-        // Output the raw data
-        readfile('php://input');
-    }
+		echo $data;
+	}else{
+		// Output the raw data
+		readfile('php://input');
+	}
 }
