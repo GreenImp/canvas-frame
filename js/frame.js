@@ -698,7 +698,7 @@ Frame = function(userOptions){
 			y1:Math.floor(-(frame.height/2)),
 			y2:Math.ceil(-(frame.height/2)+frame.height)
 		};
-		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file, null, false);
+		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file, null, slip.thickness > 0);
 	};
 
 	/**
