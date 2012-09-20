@@ -57,6 +57,7 @@
 			$('#testCanvas').width('100%').height('100%');
 
 			var myFrame = new Frame({
+				//autoResize:false,
 				canvas:$('#testCanvas'),
 				/*frame:{
 					file:'frame1.jpg',
@@ -72,12 +73,28 @@
 					//border:50,
 					layers:[
 						{
-							//file:'04.png',
+							file:'04.png',
 							color:'#efece1',
-							padding:50
+							padding:{top:50,bottom:50,left:75,right:50}
 						},
 						{
 							colour:'#0f0',
+							padding:10
+						},
+						{
+							colour:'#00f',
+							padding:5
+						},
+						{
+							colour:'#0ff',
+							padding:2
+						},
+						{
+							colour:'#ea0',
+							padding:2
+						},
+						{
+							colour:'#f0f',
 							padding:10
 						}
 					],
@@ -96,25 +113,29 @@
 								width:100,
 								height:100
 							}
-						],
+						],*/
 						[
-							/*{
+							{
 								width:100,
 								height:100
 							},
 							{
 								width:100,
 								height:100
-							},*/
-							/*{
+							}/*,
+							{
 								width:100,
 								height:100
-							}
-						],*/
+							}*/
+						],
 						[
 							{
 								width:300,
 								height:200
+							},
+							{
+								width:50,
+								height:50
 							}
 						]
 					]

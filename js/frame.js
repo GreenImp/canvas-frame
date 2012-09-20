@@ -65,11 +65,12 @@ Frame = function(userOptions){
 				]
 			]
 		},
-		photos = [],		// list of photos for the frame
+		photos = [],			// list of photos for the frame
 		centerPoint = {
 			x:0,
 			y:0
 		},
+		lineWidth = 1,			// the width of line strokes
 		defaultOptions = {
 			pxPerMM:1,
 			allowZoom:true,
@@ -244,27 +245,6 @@ Frame = function(userOptions){
 			}
 		}
 
-		// TODO - remove this
-		/*if(typeof mount.file == 'string'){
-			//images[images.length] = frame.file;
-			imageName = mount.file;
-			mount.file = new Image();
-			mount.file.loadCount = 0;
-
-			// error handler
-			mount.file.onerror = function(){
-				imageErrorCallback(mount);
-			};
-
-			if(typeof FlashCanvas != 'undefined'){
-				mount.file.src = 'frames/' + imageName;
-				ctx.loadImage(mount.file, imageLoadCallback());
-			}else{
-				mount.file.onload = imageLoadCallback;
-				mount.file.src = 'frames/' + imageName;
-			}
-		}*/
-
 		// check for photos
 		for(i in photos){
 			if(typeof photos[i] == 'string'){
@@ -389,29 +369,12 @@ Frame = function(userOptions){
 			}
 		}
 
-				// TODO - remove this
-		// check the mount border
-		/*mount.border = (typeof mount.border == 'object') ? mount.border : {top:mount.border, bottom:mount.border, left:mount.border, right:mount.border};
-		mount.borderPx = {
-			top:mount.border.top * options.pxPerMM,
-			bottom:mount.border.bottom * options.pxPerMM,
-			left:mount.border.left * options.pxPerMM,
-			right:mount.border.right * options.pxPerMM
-		};*/
-
 		// check the image padding (this is the gap between images)
 		mount.imagePadding = (typeof mount.imagePadding == 'object') ? mount.imagePadding : {row:mount.imagePadding, column:mount.imagePadding};
 		mount.imagePaddingPx = {
 			row:mount.imagePadding.row*options.pxPerMM,
 			column:mount.imagePadding.column*options.pxPerMM
 		};
-
-				// TODO - remove this
-		//mount.innerBorderPx = mount.innerBorder*options.pxPerMM;
-
-				// TODO - remove this
-		//frame.width = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx.left + mount.borderPx.right;
-		//frame.height = (frame.thicknessPx*2) + (slip.thicknessPx*2) + mount.borderPx.top + mount.borderPx.bottom;
 
 		// store the row widths
 		var rowWidths = [];
@@ -433,12 +396,8 @@ Frame = function(userOptions){
 				row[j].heightPx = row[j].height*options.pxPerMM;
 
 				// add the photo width to the row width
-				// TODO - remove this
-				//rowWidths[i] += row[j].widthPx + (mount.innerBorderPx*2);
 				rowWidths[i] += row[j].widthPx + imagePadding.x;
 				// if the photo height is larger than the previous photo (for this row) set it as the row height
-				// TODO - remove this
-				//rowHeight = (row[j].heightPx+(mount.innerBorderPx*2) > rowHeight) ? row[j].heightPx+(mount.innerBorderPx*2) : rowHeight;
 				rowHeight = (row[j].heightPx+imagePadding.y > rowHeight) ? row[j].heightPx+imagePadding.y : rowHeight;
 
 				// if we are not on the first section of the row add some right padding
@@ -465,6 +424,9 @@ Frame = function(userOptions){
 				// calculate the highest percent decrease (width|height) for the frame to fit within the canvas
 				var percent = Math.max((frame.width - canvas.width) / frame.width, (frame.height - canvas.height) / frame.height);
 
+				lineWidth -= lineWidth*(percent*2);
+				lineWidth = (lineWidth <= 0) ? 0.1 : lineWidth;
+
 				// now resize every element by the percent
 				frame.thickness -= frame.thickness*percent;
 				slip.thickness -= slip.thickness*percent;
@@ -476,24 +438,18 @@ Frame = function(userOptions){
 						mount.layers[i].padding.bottom -= mount.layers[i].padding.bottom*percent;
 						mount.layers[i].padding.left -= mount.layers[i].padding.left*percent;
 						mount.layers[i].padding.right -= mount.layers[i].padding.right*percent;
+
+						if(mount.layers[i].file != null){
+							// mount file exists
+							mount.layers[i].file.width -= Math.round(mount.layers[i].file.width*percent);
+							mount.layers[i].file.height -= Math.round(mount.layers[i].file.height*percent);
+						}
 					}
 				}
-				// TODO - remove this
-				/*mount.border.top -= mount.border.top*percent;
-				mount.border.bottom -= mount.border.bottom*percent;
-				mount.border.left -= mount.border.left*percent;
-				mount.border.right -= mount.border.right*percent;*/
 
 				mount.imagePadding.row -= mount.imagePadding.row*percent;
 				mount.imagePadding.column -= mount.imagePadding.column*percent;
 				mount.innerBorder -= mount.innerBorder*percent;
-
-				// check for a mount image
-				if(mount.file != null){
-					// mount file exists
-					mount.file.width -= Math.round(mount.file.width*percent);
-					mount.file.height -= Math.round(mount.file.height*percent);
-				}
 
 				// loop through each section row
 				for(i in mount.sections){
@@ -515,6 +471,9 @@ Frame = function(userOptions){
 				// calculate the lowest percent increase (width|height) for the frame to fit within the canvas
 				var percent = Math.min((canvas.width - frame.width) / frame.width, (canvas.height - frame.height) / frame.height);
 
+				lineWidth += lineWidth*(percent*2);
+				lineWidth = (lineWidth > 1) ? 1 : lineWidth;
+
 				// now resize every element by the percent
 				frame.thickness += frame.thickness*percent;
 				slip.thickness += slip.thickness*percent;
@@ -526,24 +485,18 @@ Frame = function(userOptions){
 						mount.layers[i].padding.bottom += mount.layers[i].padding.bottom*percent;
 						mount.layers[i].padding.left += mount.layers[i].padding.left*percent;
 						mount.layers[i].padding.right += mount.layers[i].padding.right*percent;
+
+						if(mount.layers[i].file != null){
+							// mount file exists
+							mount.layers[i].file.width += Math.round(mount.layers[i].file.width*percent);
+							mount.layers[i].file.height += Math.round(mount.layers[i].file.height*percent);
+						}
 					}
 				}
-				// TODO - remove this
-				/*mount.border.top += mount.border.top*percent;
-				mount.border.bottom += mount.border.bottom*percent;
-				mount.border.left += mount.border.left*percent;
-				mount.border.right += mount.border.right*percent;*/
 
 				mount.imagePadding.row += mount.imagePadding.row*percent;
 				mount.imagePadding.column += mount.imagePadding.column*percent;
 				mount.innerBorder += mount.innerBorder*percent;
-
-				// check for a mount image
-				if(mount.file != null){
-					// mount file exists
-					mount.file.width += Math.round(mount.file.width*percent);
-					mount.file.height += Math.round(mount.file.height*percent);
-				}
 
 				// loop through each section row
 				for(i in mount.sections){
@@ -659,18 +612,10 @@ Frame = function(userOptions){
 	 */
 	var drawMount = function(mountLayer, coords, border){
 		if(mountLayer){
-			if(border){
-				ctx.lineWidth = 1;
-				ctx.strokeStyle = '#efefef';
-				ctx.moveTo(coords.x1-1, coords.y1-1);
-				ctx.lineTo(coords.x1-1, coords.y2-1);
-				ctx.lineTo(coords.x2-1, coords.y2-1);
-				ctx.lineTo(coords.x2-1, coords.y1-1);
-				ctx.stroke();
+			if(mountLayer.colour){
+				ctx.fillStyle = mountLayer.colour;
+				ctx.fillRect(coords.x1, coords.y1, coords.x2-coords.x1, coords.y2-coords.y1);
 			}
-
-			ctx.fillStyle = mountLayer.colour;
-			ctx.fillRect(coords.x1, coords.y1, coords.x2-coords.x1, coords.y2-coords.y1);
 
 			if(mountLayer.file != null){
 				ctx.save();
@@ -692,6 +637,17 @@ Frame = function(userOptions){
 				}
 
 				ctx.restore();
+			}
+
+			if(border){
+				ctx.lineWidth = lineWidth;
+				ctx.strokeStyle = '#efefef';
+				ctx.moveTo(coords.x1, coords.y1);
+				ctx.lineTo(coords.x1, coords.y2);
+				ctx.lineTo(coords.x2, coords.y2);
+				ctx.lineTo(coords.x2, coords.y1);
+				ctx.lineTo(coords.x1, coords.y1);
+				ctx.stroke();
 			}
 		}
 	};
@@ -744,60 +700,40 @@ Frame = function(userOptions){
 
 		// output the frame layers, around the image
 		if(mount.layers.length > 1){
-			for(var i in mount.layers){
+			var i = 0,
+				paddingX = 0,
+				paddingY = 0;
+			for(i in mount.layers){
 				if(i > 0){
-					x2 += mount.layers[i].paddingPx.left + mount.layers[i].paddingPx.right;
-					y2 += mount.layers[i].paddingPx.top + mount.layers[i].paddingPx.bottom;
+					paddingX += mount.layers[1].paddingPx.left;// + mount.layers[1].paddingPx.right;
+					paddingY += mount.layers[1].paddingPx.top;// + mount.layers[1].paddingPx.bottom;
+				}
+			}
 
+
+			x2 += paddingX + mount.layers[1].paddingPx.right;
+			y2 += paddingY + mount.layers[1].paddingPx.bottom;
+
+			for(i in mount.layers){
+				if(i > 0){
 					drawMount(mount.layers[i], {x1:x1,x2:x2,y1:y1,y2:y2}, true);
 
 					x1 += mount.layers[i].paddingPx.left;
-					x2 += mount.layers[i].paddingPx.right;
+					x2 -= mount.layers[i].paddingPx.right;
 					y1 += mount.layers[i].paddingPx.top;
-					y2 += mount.layers[i].paddingPx.bottom;
+					y2 -= mount.layers[i].paddingPx.bottom;
 				}
 			}
 		}
 
 		// fill the image section
 		ctx.fillStyle = '#efefef';
-		// TODO - remove this
-		//ctx.fillRect(x1+mount.innerBorderPx, y1+mount.innerBorderPx, width, height);
 		ctx.fillRect(x1, y1, width, height);
 
 		// draw the image (if one exists)
 		if(typeof image == 'object'){
-			// TODO - remove this
-			//ctx.drawImage(image, x1+mount.innerBorderPx, y1+mount.innerBorderPx, width, height);
 			ctx.drawImage(image, x1, y1, width, height);
 		}
-
-		/*ctx.lineWidth = 1;
-		ctx.strokeStyle = '#efefef';
-		ctx.beginPath();
-		ctx.moveTo(x1, y1);
-		ctx.lineTo(x1, y2);
-		ctx.lineTo(x2, y2);
-		ctx.lineTo(x2, y1);
-		ctx.closePath();
-		ctx.stroke();
-
-		// only output the second line if the canvas is big enough
-		if((frame.width > 300) && (frame.height > 300)){
-			x1--;
-			x2++;
-			y1--;
-			y2++;
-			ctx.lineWidth = 1;
-			ctx.strokeStyle = '#eee';
-			ctx.beginPath();
-			ctx.moveTo(x1, y1);
-			ctx.lineTo(x1, y2);
-			ctx.lineTo(x2, y2);
-			ctx.lineTo(x2, y1);
-			ctx.closePath();
-			ctx.stroke();
-		}*/
 	};
 
 	/**
@@ -820,10 +756,28 @@ Frame = function(userOptions){
 		var width = frame.width - (frame.thicknessPx*2) - (slip.thickness*2),
 			height = frame.height - (frame.thicknessPx*2) - (slip.thickness*2);
 
+		// calculate the padding around each image (for the mount layers)
+		var i = 0,
+			imagePadding = {
+				top:0,
+				bottom:0,
+				left:0,
+				right:0
+			};
+		// loop through each mount layer and calculate its padding
+		for(i in mount.layers){
+			if(i > 0){
+				imagePadding.left += mount.layers[i].paddingPx.left;
+				imagePadding.right += mount.layers[i].paddingPx.right;
+				imagePadding.top += mount.layers[i].paddingPx.top;
+				imagePadding.bottom += mount.layers[i].paddingPx.bottom;
+			}
+		}
+
 		// loop through and output the photos
 		var count = 0,	// the image count (for referencing photos)
 			yOffset = -(height/2) + mountLayer.paddingPx.top;
-		for(var i in mount.sections){
+		for(i in mount.sections){
 			var row = mount.sections[i],
 				rowHeight = 0;
 
@@ -833,7 +787,7 @@ Frame = function(userOptions){
 
 				// get the width of the row
 				var rowWidth = width - mountLayer.paddingPx.left - mountLayer.paddingPx.right;
-				xOffset = -(width/2) + mountLayer.paddingPx.left + ((rowWidth/2) - (row[0].widthPx/2));
+				xOffset = -(width/2) + mountLayer.paddingPx.left + ((rowWidth/2) - ((row[0].widthPx)/2)) - imagePadding.left;
 			}else{
 				// more than one image on the row
 				xOffset = -(width/2) + mountLayer.paddingPx.left;
@@ -842,17 +796,13 @@ Frame = function(userOptions){
 			for(var j in row){
 				drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
 
-				// TODO - innerBorder needs to calculate correctly from mount layers
-				//xOffset += row[j].widthPx + mount.imagePaddingPx.column + (mount.innerBorderPx*2);
-				xOffset += row[j].widthPx + mount.imagePaddingPx.column;
+				xOffset += row[j].widthPx + mount.imagePaddingPx.column + imagePadding.left + imagePadding.right;
 				count++;
 
 				rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
 			}
 
-			// TODO - innerBorder needs to calculate correctly from mount layers
-			//yOffset += rowHeight + (mount.innerBorderPx*2) + mount.imagePaddingPx.row;
-			yOffset += rowHeight + mount.imagePaddingPx.row;
+			yOffset += rowHeight + mount.imagePaddingPx.row + imagePadding.top + imagePadding.bottom;
 		}
 
 
