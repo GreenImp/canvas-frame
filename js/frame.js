@@ -493,8 +493,38 @@ Frame = function(userOptions){
 	 * @param thickness
 	 * @param file
 	 * @param fillColor
+	 * @param shadow
 	 */
-	var drawFrame = function(x1, y1, x2, y2, thickness, file, fillColor){
+	var drawFrame = function(x1, y1, x2, y2, thickness, file, fillColor, shadow){
+		// draw the drop shadow
+		if(shadow !== false){
+			var offset = (Math.min(frame.width, frame.height) > 300) ? 2 : 1;
+			ctx.shadowOffsetX = offset;				// Sets the shadow offset x
+			ctx.shadowOffsetY = offset;				// Sets the shadow offset y
+			ctx.shadowBlur = 4;						// Sets the shadow blur size
+			ctx.shadowColor = 'rgba(0, 0, 0, 1)';	// Sets the shadow color
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = '#f00';
+
+			ctx.beginPath();
+			offset = thickness/2
+			ctx.moveTo(x1+offset, y1+offset);
+			ctx.lineTo(x2-offset, y1+offset);
+			ctx.lineTo(x2-thickness-2, y1+thickness-2);
+			ctx.lineTo(x1+thickness-2, y1+thickness-2);
+			ctx.lineTo(x1+thickness-2, y2-thickness-2);
+			ctx.lineTo(x1+offset, y2-offset);
+			ctx.lineTo(x1+offset, y1+offset);
+			ctx.closePath();
+			ctx.stroke();
+
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = 0;
+			ctx.shadowBlur = 0;
+		}
+
+
+		// draw the frame
 		if(file !== null){
 			thickness = parseInt(thickness) || 0;
 			var length = 0,	// tracks the current output length of a frame side
@@ -560,6 +590,8 @@ Frame = function(userOptions){
 			ctx.restore();
 		}else{
 			// frame image doesn't exist - use a colour fill
+
+			// define the fill colour
 			ctx.fillStyle = fillColor || '#eaeaea';
 
 			// top
@@ -666,7 +698,7 @@ Frame = function(userOptions){
 			y1:Math.floor(-(frame.height/2)),
 			y2:Math.ceil(-(frame.height/2)+frame.height)
 		};
-		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file);
+		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file, null, false);
 	};
 
 	/**
@@ -697,8 +729,6 @@ Frame = function(userOptions){
 		// calculate the starting x/y coordinates
 		var x1 = (typeof x == 'number') ? x : -(width/2),
 			y1 = (typeof y == 'number') ? y : -(height/2),
-			//x2 = x1 + width + (mount.innerBorderPx*2),
-			//y2 = y1 + height + (mount.innerBorderPx*2)
 			x2 = x1 + width,
 			y2 = y1 + height;
 
