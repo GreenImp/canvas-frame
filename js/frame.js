@@ -14,47 +14,28 @@ Frame = function(userOptions){
 		canvas = null,
 		ctx = null,
 		frame = {		// frame information
-			file:null,		// frame image file
-			thickness:0,	// frame width/thickness in mm
-			thicknessPx:0,	// frame width/thickness in pixels
-			width:0,		// the frame width in pixels
-			height:0		// the frame height in pixels
+			file:null,				// frame image file
+			thickness:0,			// frame width/thickness in mm
+			thicknessPx:0,			// frame width/thickness in pixels
+			width:0,				// the frame width in pixels
+			height:0				// the frame height in pixels
 		},
 		slip = {		// slip information
-			file:null,		// slip image file
-			thickness:0,	// slip width/thickness in mm
-			thicknessPx:0	// slip width/thickness in pixels
+			file:null,				// slip image file
+			thickness:0,			// slip width/thickness in mm
+			thicknessPx:0			// slip width/thickness in pixels
 		},
 		mount = {		// mount information
-			layers:[
-				/*{
-					file:null,
-					colour:'#fff',
+			lineColor:'#efefef',	// the colour of the lines separating mount layers
+			layers:[],				// the mount layers
 
-					padding:45
-				}*/
-			],
-
-			/*file:null,			// background file, if applicable
-			colour:'#fff',		// background colour
-
-			border:50,			// the space between the photo and the frame in mm (can be a numerical value or object)
-			borderPx:{			// the space between the photo and the frame in pixels (is an object)
-				top:0,
-				bottom:0,
-				left:0,
-				right:0
-			},
-			innerBorder:5,		// the space between the photo and the photo border in mm
-			innerBorderPx:0,	// the space between the photo and the photo border in pixels*/
-
-			imagePadding:50,	// padding between photos in mm (only used if frame contains multiple photos - can be a numerical value or object)
-			imagePaddingPx:{	// padding between photos in pixels (is an object)
+			imagePadding:50,		// padding between photos in mm (only used if frame contains multiple photos - can be a numerical value or object)
+			imagePaddingPx:{		// padding between photos in pixels (is an object)
 				row:0,
 				column:0
 			},
 
-			sections:[			// mount photo sections
+			sections:[				// mount photo sections
 				[
 					{
 						width:0,		// image width in mm
@@ -65,17 +46,16 @@ Frame = function(userOptions){
 				]
 			]
 		},
-		photos = [],			// list of photos for the frame
-		centerPoint = {
+		photos = [],	// list of photos for the frame
+		centerPoint = {	// the center of the canvas
 			x:0,
 			y:0
 		},
-		lineWidth = 1,			// the width of line strokes
 		defaultOptions = {
-			pxPerMM:1,
-			allowZoom:true,
-			allowSave:true,
-			autoResize:true
+			pxPerMM:1,				// how many pixels per millimeter
+			allowZoom:true,			// whether to allow click-to-zoom functionality
+			allowSave:true,			// whether to allow saving to png
+			autoResize:true			// whether to aut-resize the frame to fit the canvas (turning this off could cause the frame to be cropped)
 		},
 		options = {};
 
@@ -96,13 +76,6 @@ Frame = function(userOptions){
 		$.extend(slip, userOptions.slip || {});
 		$.extend(mount, userOptions.mount || {});
 		$.extend(photos, userOptions.photos || []);
-
-		// check if the colour has been specified in American-English
-		if(mount.layers.length > 0){
-			for(i in mount.layers){
-				mount.layers[i].colour = mount.layers[i].color || mount.layers[i].colour;
-			}
-		}
 
 
 		// define the canvas object
@@ -342,7 +315,7 @@ Frame = function(userOptions){
 
 		// check the mount layers
 		if(mount.layers.length > 0){
-			// the frame has mounts ;- loop through them
+			// the frame has mounts - loop through them
 			for(i in mount.layers){
 				// get the layer
 				var layer = mount.layers[i];
@@ -424,9 +397,6 @@ Frame = function(userOptions){
 				// calculate the highest percent decrease (width|height) for the frame to fit within the canvas
 				var percent = Math.max((frame.width - canvas.width) / frame.width, (frame.height - canvas.height) / frame.height);
 
-				lineWidth -= lineWidth*(percent*2);
-				lineWidth = (lineWidth <= 0) ? 0.1 : lineWidth;
-
 				// now resize every element by the percent
 				frame.thickness -= frame.thickness*percent;
 				slip.thickness -= slip.thickness*percent;
@@ -470,9 +440,6 @@ Frame = function(userOptions){
 
 				// calculate the lowest percent increase (width|height) for the frame to fit within the canvas
 				var percent = Math.min((canvas.width - frame.width) / frame.width, (canvas.height - frame.height) / frame.height);
-
-				lineWidth += lineWidth*(percent*2);
-				lineWidth = (lineWidth > 1) ? 1 : lineWidth;
 
 				// now resize every element by the percent
 				frame.thickness += frame.thickness*percent;
@@ -610,20 +577,22 @@ Frame = function(userOptions){
 	 * Draw the backing mount (not including
 	 * any photo sections or photos)
 	 */
-	var drawMount = function(mountLayer, coords, border){
+	var drawMount = function(mountLayer, coords, border, padding){
 		if(mountLayer){
-			if(mountLayer.colour){
-				ctx.fillStyle = mountLayer.colour;
+			if(mountLayer.color){
+				ctx.fillStyle = mountLayer.color;
 				ctx.fillRect(coords.x1, coords.y1, coords.x2-coords.x1, coords.y2-coords.y1);
 			}
 
 			if(mountLayer.file != null){
 				ctx.save();
+				ctx.beginPath();
 				ctx.moveTo(coords.x1, coords.y1);
 				ctx.lineTo(coords.x1, coords.y2);
 				ctx.lineTo(coords.x2, coords.y2);
 				ctx.lineTo(coords.x2, coords.y1);
 				ctx.lineTo(coords.x1, coords.y1);
+				ctx.closePath();
 				ctx.clip();
 
 				var height = 0;
@@ -640,14 +609,28 @@ Frame = function(userOptions){
 			}
 
 			if(border){
+				// mset the line width dependant on the size of the layer
+				var lineWidth = (typeof padding == 'object') ?
+									Math.min(
+											(padding.top < 5) ? 0.1 : 1,
+											(padding.top < 5) ? 0.1 : 1,
+											(padding.bottom < 5) ? 0.1 : 1,
+											(padding.left < 5) ? 0.1 : 1,
+											(padding.right < 5) ? 0.1 : 1
+									)
+								:
+									1;
+
 				ctx.lineWidth = lineWidth;
-				ctx.strokeStyle = '#efefef';
+				ctx.strokeStyle = mount.lineColor;
+				ctx.beginPath();
 				ctx.moveTo(coords.x1, coords.y1);
 				ctx.lineTo(coords.x1, coords.y2);
 				ctx.lineTo(coords.x2, coords.y2);
 				ctx.lineTo(coords.x2, coords.y1);
 				ctx.lineTo(coords.x1, coords.y1);
 				ctx.stroke();
+				ctx.closePath();
 			}
 		}
 	};
@@ -705,8 +688,8 @@ Frame = function(userOptions){
 				paddingY = 0;
 			for(i in mount.layers){
 				if(i > 0){
-					paddingX += mount.layers[1].paddingPx.left;// + mount.layers[1].paddingPx.right;
-					paddingY += mount.layers[1].paddingPx.top;// + mount.layers[1].paddingPx.bottom;
+					paddingX += mount.layers[1].paddingPx.left;
+					paddingY += mount.layers[1].paddingPx.top;
 				}
 			}
 
@@ -716,7 +699,8 @@ Frame = function(userOptions){
 
 			for(i in mount.layers){
 				if(i > 0){
-					drawMount(mount.layers[i], {x1:x1,x2:x2,y1:y1,y2:y2}, true);
+					mount.layers[i].color = mount.layers[i].color || '#fff';
+					drawMount(mount.layers[i], {x1:x1,x2:x2,y1:y1,y2:y2}, true, mount.layers[i].paddingPx);
 
 					x1 += mount.layers[i].paddingPx.left;
 					x2 -= mount.layers[i].paddingPx.right;
@@ -742,11 +726,14 @@ Frame = function(userOptions){
 	 */
 	this.draw = function(){
 		// draw the mount
-		var x1 = -(frame.width/2),
-			x2 = x1 + frame.width,
-			y1 = -(frame.height/2),
-			y2 = y1 + frame.height;
-		drawMount(mount.layers[0], {x1:x1,x2:x2,y1:y1,y2:y2});
+		if(mount.layers.length > 0){
+			var x1 = -(frame.width/2),
+				x2 = x1 + frame.width,
+				y1 = -(frame.height/2),
+				y2 = y1 + frame.height;
+			mount.layers[0].color = mount.layers[0].color || ((mount.layers.length >  1) ? '#fff' : null);
+			drawMount(mount.layers[0], {x1:x1,x2:x2,y1:y1,y2:y2});
+		}
 
 
 		// draw the images to the mount
