@@ -609,28 +609,49 @@ Frame = function(userOptions){
 			}
 
 			if(border){
-				// mset the line width dependant on the size of the layer
-				var lineWidth = (typeof padding == 'object') ?
-									Math.min(
-											(padding.top < 5) ? 0.1 : 1,
-											(padding.top < 5) ? 0.1 : 1,
-											(padding.bottom < 5) ? 0.1 : 1,
-											(padding.left < 5) ? 0.1 : 1,
-											(padding.right < 5) ? 0.1 : 1
-									)
-								:
-									1;
+				// determine the padding
+				if(typeof padding == 'object'){
+					padding = Math.min(padding.top, padding.top, padding.bottom, padding.left, padding.right);
+				}else{
+					padding = parseInt(padding);
+					if(isNaN(padding)){
+						padding = 0;
+					}
+				}
 
-				ctx.lineWidth = lineWidth;
-				ctx.strokeStyle = mount.lineColor;
+				// set the line colours
+				var lineColorLight = mount.lineColor,
+					lineColorDark = shadeColor(mount.lineColor, -10);	// determine the shadow/dark colour from the light colour
+
+				// outer line
+				ctx.lineWidth = 1;
+				// if padding is too small to have the inner line, set the top section to use the darker colour so we still have shading
+				ctx.strokeStyle = (padding >= 5) ? lineColorLight : lineColorDark;
 				ctx.beginPath();
-				ctx.moveTo(coords.x1, coords.y1);
-				ctx.lineTo(coords.x1, coords.y2);
-				ctx.lineTo(coords.x2, coords.y2);
-				ctx.lineTo(coords.x2, coords.y1);
+				ctx.moveTo(coords.x2, coords.y1);
 				ctx.lineTo(coords.x1, coords.y1);
+				ctx.lineTo(coords.x1, coords.y2);
 				ctx.stroke();
 				ctx.closePath();
+				ctx.strokeStyle = lineColorLight;
+				ctx.beginPath();
+				ctx.moveTo(coords.x1, coords.y2);
+				ctx.lineTo(coords.x2, coords.y2);
+				ctx.lineTo(coords.x2, coords.y1);
+				ctx.stroke();
+				ctx.closePath();
+
+				// only output the inner line if padding space is greater than 5px, otherwise the lines take up too much space
+				if(padding >= 5){
+					// inner line
+					ctx.strokeStyle = lineColorDark;
+					ctx.beginPath();
+					ctx.moveTo(coords.x2-1, coords.y1+1);
+					ctx.lineTo(coords.x1+1, coords.y1+1);
+					ctx.lineTo(coords.x1+1, coords.y2-1);
+					ctx.stroke();
+					ctx.closePath();
+				}
 			}
 		}
 	};
@@ -827,6 +848,92 @@ Frame = function(userOptions){
 			});
 		}
 	}
+
+	/**
+	 * Takes a hexedecimal or RGB colour and returns
+	 * a colour that is different by the specified shade.
+	 *
+	 *
+	 * colour can be defined as a Hexdecimal value:
+	 * #f5dd66, f04eaa (with or without the hash)
+	 *
+	 * An array of RGB values:
+	 * [0, 245, 67] (R,G,B)
+	 *
+	 * Or an object with the variables 'r', 'g', and 'b':
+	 * {
+	 *     r:0,
+	 *     g:245,
+	 *     b:67
+	 * }
+	 *
+	 * The returned value will be of the same type as the given colour
+	 *
+	 * @param colour
+	 * @param shade
+	 * @return {String}|{object}
+	 */
+	var shadeColor = function(colour, shade){
+		var R = 0, G = 0, B = 0;
+
+		var type = (colour.constructor == Array) ? 'array' : ((typeof colour == 'object') ? 'object' : 'hex');
+
+		if(type == 'hex'){
+			// the colour is a string - assume HEX value
+
+			// remove the hash and ensure that the colour is 6 characters long
+			colour = colour.replace('#', '');
+			while(colour.length < 6){
+				// substring the colour to 3 characters
+				colour = colour.substring(0, 3);
+				// add the 3 characters on again, to make it 6 characters long
+				colour += colour;
+			}
+
+			// convert string to int (radix 16)
+			colour = parseInt(colour, 16);
+
+			// get the RGB values
+			R = (colour & 0xFF0000) >> 16;
+			G = (colour & 0x00FF00) >> 8;
+			B = (colour & 0x0000FF) >> 0;
+		}else{
+			// colour is an object|array - get the RGB values
+			R = colour.r || colour[0] || 0;
+			G = colour.g || colour[1] || 0;
+			B = colour.b || colour[2] || 0;
+		}
+
+		// get the shade difference
+		R += Math.floor((shade/255)*R);
+		G += Math.floor((shade/255)*G);
+		B += Math.floor((shade/255)*B);
+
+		// ensure that the values aren't over 255 or under 0
+		R = (R > 255) ? 255 : ((R < 0) ? 0 : R);
+		G = (G > 255) ? 255 : ((G < 0) ? 0 : G);
+		B = (B > 255) ? 255 : ((B < 0) ? 0 : B);
+
+		if(type == 'hex'){
+			// convert the RGB values back to HEX
+			var newColour = (R<<16) + (G<<8) + (B);
+			newColour = newColour.toString(16);
+
+			// if the string is less than 6 characters long pad it out
+			// we need this, otherwise we loose any leading zeros
+			while(newColour.length < 6){
+				newColour = '0' + newColour;
+			}
+
+			return '#' + newColour;
+		}else if(type == 'array'){
+			// return an array
+			return [R,G,B];
+		}else{
+			// return an object
+			return {r:R,g:G,b:B};
+		}
+	};
 
 
 	// initialise the plugin
