@@ -10,7 +10,8 @@ Frame = function(userOptions){
 		disableContextMenu:true
 	};
 
-	var Frame = this,
+	var $ = jQuery,
+		Frame = this,
 		canvas = null,
 		ctx = null,
 		frame = {		// frame information
@@ -71,21 +72,20 @@ Frame = function(userOptions){
 		var i = 0;
 
 		// set the user defined options
-		userOptions = userOptions || {};
-		$.extend(frame, userOptions.frame || {});
-		$.extend(slip, userOptions.slip || {});
-		$.extend(mount, userOptions.mount || {});
-		$.extend(photos, userOptions.photos || []);
-
+		options = $.extend(true, {}, userOptions || {});
+		$.extend(frame, options.frame || {});
+		$.extend(slip, options.slip || {});
+		$.extend(mount, options.mount || {});
+		$.extend(photos, options.photos || []);
 
 		// define the canvas object
 		if(canvas == null){
 			if(jQuery){
 				// jQuery exists - use it
-				canvas = ((userOptions.canvas instanceof jQuery) ? userOptions.canvas : $(userOptions.canvas)).get(0);
+				canvas = ((options.canvas instanceof jQuery) ? options.canvas : $(options.canvas)).get(0);
 			}else{
 				// jQuery doesn't exist - assume canvas is an ID
-				canvas = document.getElementById(userOptions.canvas);
+				canvas = document.getElementById(options.canvas);
 			}
 			ctx = canvas.getContext('2d');
 		}
@@ -102,13 +102,13 @@ Frame = function(userOptions){
 		ctx.translate(centerPoint.x, centerPoint.y);
 
 		// remove any unwanted option variables
-		delete userOptions.frame;
-		delete userOptions.slip;
-		delete userOptions.mount;
-		delete userOptions.photos;
-		delete userOptions.canvas;
+		delete options.frame;
+		delete options.slip;
+		delete options.mount;
+		delete options.photos;
+		delete options.canvas;
 		// set the options
-		options = $.extend(defaultOptions, userOptions || {});
+		options = $.extend(true, defaultOptions, options);
 
 
 		// if allowSave and jquery.contextMenu and canvas2png is included, add our context menu
@@ -132,6 +132,10 @@ Frame = function(userOptions){
 							}
 						}
 					);
+		}else{
+			// ensure that save functionality is disabled
+			$('body #canvasMenu').remove();
+			$(canvas).destroyContextMenu();
 		}
 
 		// if allowZoom we need to add zoom functionality
@@ -141,16 +145,17 @@ Frame = function(userOptions){
 
 
 		// store a collection of all images
-		var imageName = '';	// temporary storage for image name
+		var imageName = '',	// temporary storage for image name
+			hasFrame = (typeof frame.file == 'string') && (frame.file != ''),
+			hasSlip = (typeof slip.file == 'string') && (slip.file != '');
 
 		// count images we need to load
-		imageCount = ((typeof frame.file == 'string') ? 1 : 0) + ((typeof slip.file == 'string') ? 1 : 0) + mount.layers.length + photos.length;
+		imageCount = (hasFrame ? 1 : 0) + (hasSlip ? 1 : 0) + mount.layers.length + photos.length;
 		// count images that have been loaded
 		loaded = 0;
 
 		// check for a frame image
-		if(typeof frame.file == 'string'){
-			//images[images.length] = frame.file;
+		if(hasFrame){
 			imageName = frame.file;
 			frame.file = new Image();
 			frame.file.loadCount = 0;
@@ -170,8 +175,7 @@ Frame = function(userOptions){
 		}
 
 		// check for a slip image
-		if(typeof slip.file == 'string'){
-			//images[images.length] = frame.file;
+		if(hasSlip){
 			imageName = slip.file;
 			slip.file = new Image();
 			slip.file.loadCount = 0;
@@ -192,10 +196,8 @@ Frame = function(userOptions){
 
 		// check for a mount image
 		if(mount.layers.length > 0){
-			for(i in mount.layers){
-				var layer = mount.layers[i];
-
-				if(typeof layer.file == 'string'){
+			$.each(mount.layers, function(i, layer){
+				if((typeof layer.file == 'string') && (layer.file != '')){
 					imageName = layer.file;
 					layer.file = new Image();
 					layer.file.loadCount = 0;
@@ -215,34 +217,34 @@ Frame = function(userOptions){
 				}else{
 					imageCount--;
 				}
-			}
+			});
 		}
 
 		// check for photos
-		for(i in photos){
-			if(typeof photos[i] == 'string'){
-				imageName = photos[i];
-				photos[i] = new Image();
-				photos[i].loadCount = 0;
+		$.each(photos, function(i, photo){
+			if((typeof photo == 'string') && (photo != '')){
+				imageName = photo;
+				photo = new Image();
+				photo.loadCount = 0;
 
 				// error handler
-				photos[i].onerror = function(){
-					imageErrorCallback({file:photos[i]});
+				photo.onerror = function(){
+					imageErrorCallback({file:photo});
 				};
 
 				if(typeof FlashCanvas != 'undefined'){
-					photos[i].src = 'frames/' + imageName;
-					ctx.loadImage(photos[i], imageLoadCallback());
+					photo.src = 'frames/' + imageName;
+					ctx.loadImage(photo, imageLoadCallback());
 				}else{
-					photos[i].onload = imageLoadCallback;
-					photos[i].src = 'frames/' + imageName;
+					photo.onload = imageLoadCallback;
+					photo.src = 'frames/' + imageName;
 				}
 			}else{
 				imageCount--;
 			}
-		}
+		});
 
-		if(imageCount == 0){
+		if(imageCount <= 0){
 			postLoadInit();
 		}
 	};
@@ -316,10 +318,7 @@ Frame = function(userOptions){
 		// check the mount layers
 		if(mount.layers.length > 0){
 			// the frame has mounts - loop through them
-			for(i in mount.layers){
-				// get the layer
-				var layer = mount.layers[i];
-
+			$.each(mount.layers, function(i, layer){
 				// ensure that its padding is defined as an object
 				layer.padding = (typeof layer.padding == 'object') ? layer.padding : {top:layer.padding, bottom:layer.padding, left:layer.padding, right:layer.padding};
 
@@ -339,7 +338,7 @@ Frame = function(userOptions){
 					imagePadding.x += layer.paddingPx.left + layer.paddingPx.right;
 					imagePadding.y += layer.paddingPx.top + layer.paddingPx.bottom;
 				}
-			}
+			});
 		}
 
 		// check the image padding (this is the gap between images)
@@ -351,11 +350,8 @@ Frame = function(userOptions){
 
 		// store the row widths
 		var rowWidths = [];
-
 		// loop through each section row
-		for(i in mount.sections){
-			// define the current row
-			var row = mount.sections[i];
+		$.each(mount.sections, function(i, row){
 			// start the row widths count, for this row
 			rowWidths[i] = 0;
 
@@ -363,31 +359,33 @@ Frame = function(userOptions){
 			var rowHeight = 0;
 
 			// loop through each section in the row
-			for(j in row){
+			$.each(row, function(j, column){
 				// convert the image width/heights into pixels
-				row[j].widthPx = row[j].width*options.pxPerMM;
-				row[j].heightPx = row[j].height*options.pxPerMM;
+				column.widthPx = column.width*options.pxPerMM;
+				column.heightPx = column.height*options.pxPerMM;
 
 				// add the photo width to the row width
-				rowWidths[i] += row[j].widthPx + imagePadding.x;
+				rowWidths[i] += column.widthPx + imagePadding.x;
 				// if the photo height is larger than the previous photo (for this row) set it as the row height
-				rowHeight = (row[j].heightPx+imagePadding.y > rowHeight) ? row[j].heightPx+imagePadding.y : rowHeight;
+				rowHeight = (column.heightPx+imagePadding.y > rowHeight) ? column.heightPx+imagePadding.y : rowHeight;
 
 				// if we are not on the first section of the row add some right padding
 				if(j > 0){
 					rowWidths[i] += mount.imagePaddingPx.column;
 				}
-			}
+			});
 
 			// add the row height
 			frame.height += rowHeight + ((i > 0) ? mount.imagePaddingPx.row : 0);
-		}
+		});
 
 		// add the width of the widest row to the frame width
-		frame.width += Math.max.apply(Math, rowWidths);
+		frame.width += (rowWidths.length > 0) ? Math.max.apply(Math, rowWidths) : 0;
 
 		// now that we have the dimensions, we need to increase/decrease them to fit as closely as possible to the canvas size
-		if(options.autoResize){
+		if((frame.width <= 0) || (frame.height <= 0)){
+			return false;
+		}else if(options.autoResize){
 			var widthDifference = canvas.width - Math.round(frame.width),
 				heightDifference = canvas.height - Math.round(frame.height),
 				allowableDifference = 5;
@@ -403,35 +401,31 @@ Frame = function(userOptions){
 
 				if(mount.layers.length > 0){
 					// the frame has mounts - loop through them
-					for(i in mount.layers){
-						mount.layers[i].padding.top -= mount.layers[i].padding.top*percent;
-						mount.layers[i].padding.bottom -= mount.layers[i].padding.bottom*percent;
-						mount.layers[i].padding.left -= mount.layers[i].padding.left*percent;
-						mount.layers[i].padding.right -= mount.layers[i].padding.right*percent;
+					$.each(mount.layers, function(i, layer){
+						layer.padding.top -= layer.padding.top*percent;
+						layer.padding.bottom -= layer.padding.bottom*percent;
+						layer.padding.left -= layer.padding.left*percent;
+						layer.padding.right -= layer.padding.right*percent;
 
-						if(mount.layers[i].file != null){
+						if(layer.file != null){
 							// mount file exists
-							mount.layers[i].file.width -= Math.round(mount.layers[i].file.width*percent);
-							mount.layers[i].file.height -= Math.round(mount.layers[i].file.height*percent);
+							layer.file.width -= Math.round(layer.file.width*percent);
+							layer.file.height -= Math.round(layer.file.height*percent);
 						}
-					}
+					});
 				}
 
 				mount.imagePadding.row -= mount.imagePadding.row*percent;
 				mount.imagePadding.column -= mount.imagePadding.column*percent;
-				mount.innerBorder -= mount.innerBorder*percent;
 
 				// loop through each section row
-				for(i in mount.sections){
-					// define the current row
-					row = mount.sections[i];
-
+				$.each(mount.sections, function(i, row){
 					// loop through each section in the row
-					for(j in row){
-						row[j].width -= row[j].width*percent;
-						row[j].height -= row[j].height*percent;
-					}
-				}
+					$.each(row, function(j, column){
+						column.width -= column.width*percent;
+						column.height -= column.height*percent;
+					});
+				});
 
 				// force a re-calculation of the frame sizes
 				calculateSizes();
@@ -447,35 +441,31 @@ Frame = function(userOptions){
 
 				if(mount.layers.length > 0){
 					// the frame has mounts - loop through them
-					for(i in mount.layers){
-						mount.layers[i].padding.top += mount.layers[i].padding.top*percent;
-						mount.layers[i].padding.bottom += mount.layers[i].padding.bottom*percent;
-						mount.layers[i].padding.left += mount.layers[i].padding.left*percent;
-						mount.layers[i].padding.right += mount.layers[i].padding.right*percent;
+					$.each(mount.layers, function(i, layer){
+						layer.padding.top += layer.padding.top*percent;
+						layer.padding.bottom += layer.padding.bottom*percent;
+						layer.padding.left += layer.padding.left*percent;
+						layer.padding.right += layer.padding.right*percent;
 
-						if(mount.layers[i].file != null){
+						if(layer.file != null){
 							// mount file exists
-							mount.layers[i].file.width += Math.round(mount.layers[i].file.width*percent);
-							mount.layers[i].file.height += Math.round(mount.layers[i].file.height*percent);
+							layer.file.width += Math.round(layer.file.width*percent);
+							layer.file.height += Math.round(layer.file.height*percent);
 						}
-					}
+					});
 				}
 
 				mount.imagePadding.row += mount.imagePadding.row*percent;
 				mount.imagePadding.column += mount.imagePadding.column*percent;
-				mount.innerBorder += mount.innerBorder*percent;
 
 				// loop through each section row
-				for(i in mount.sections){
-					// define the current row
-					row = mount.sections[i];
-
+				$.each(mount.sections, function(i, row){
 					// loop through each section in the row
-					for(j in row){
-						row[j].width += row[j].width*percent;
-						row[j].height += row[j].height*percent;
-					}
-				}
+					$.each(row, function(j, column){
+						column.width += column.width*percent;
+						column.height += column.height*percent;
+					});
+				});
 
 				// force a re-calculation of the frame sizes
 				calculateSizes();
@@ -484,7 +474,7 @@ Frame = function(userOptions){
 	};
 
 	/**
-	 * Handle funcion for drawing frames (rims & slips)
+	 * Handle function for drawing frames (rims & slips)
 	 *
 	 * @param x1
 	 * @param y1
@@ -692,26 +682,30 @@ Frame = function(userOptions){
 	 * Draw the actual frame rim
 	 */
 	var drawRim = function(){
-		var frameCoords = {
-			x1:Math.floor(-(frame.width/2)),
-			x2:Math.ceil(-(frame.width/2) + frame.width),
-			y1:Math.floor(-(frame.height/2)),
-			y2:Math.ceil(-(frame.height/2)+frame.height)
-		};
-		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file, null, slip.thickness > 0);
+		if(frame.thickness > 0){
+			var frameCoords = {
+				x1:Math.floor(-(frame.width/2)),
+				x2:Math.ceil(-(frame.width/2) + frame.width),
+				y1:Math.floor(-(frame.height/2)),
+				y2:Math.ceil(-(frame.height/2)+frame.height)
+			};
+			drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, frame.thickness, frame.file, null, slip.thickness > 0);
+		}
 	};
 
 	/**
 	 * Draw the frame slip
 	 */
 	var drawSlip = function(){
-		var frameCoords = {
-			x1:Math.floor(-(frame.width/2)+frame.thickness),
-			x2:Math.ceil(-(frame.width/2) + frame.width - frame.thickness),
-			y1:Math.floor(-(frame.height/2) + frame.thickness),
-			y2:Math.ceil(-(frame.height/2) + frame.height - frame.thickness)
-		};
-		drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, slip.thickness, slip.file, '#ddd');
+		if(slip.thickness > 0){
+			var frameCoords = {
+				x1:Math.floor(-(frame.width/2)+frame.thickness),
+				x2:Math.ceil(-(frame.width/2) + frame.width - frame.thickness),
+				y1:Math.floor(-(frame.height/2) + frame.thickness),
+				y2:Math.ceil(-(frame.height/2) + frame.height - frame.thickness)
+			};
+			drawFrame(frameCoords.x1, frameCoords.y1, frameCoords.x2, frameCoords.y2, slip.thickness, slip.file, '#ddd');
+		}
 	};
 
 	/**
@@ -737,28 +731,28 @@ Frame = function(userOptions){
 			var i = 0,
 				paddingX = 0,
 				paddingY = 0;
-			for(i in mount.layers){
+			$.each(mount.layers, function(i, layer){
 				if(i > 0){
-					paddingX += mount.layers[1].paddingPx.left;
-					paddingY += mount.layers[1].paddingPx.top;
+					paddingX += layer.paddingPx.left;
+					paddingY += layer.paddingPx.top;
 				}
-			}
+			});
 
 
 			x2 += paddingX + mount.layers[1].paddingPx.right;
 			y2 += paddingY + mount.layers[1].paddingPx.bottom;
 
-			for(i in mount.layers){
+			$.each(mount.layers, function(i, layer){
 				if(i > 0){
-					mount.layers[i].color = mount.layers[i].color || '#fff';
-					drawMount(mount.layers[i], {x1:x1,x2:x2,y1:y1,y2:y2}, true, mount.layers[i].paddingPx);
+					layer.color = layer.color || '#fff';
+					drawMount(layer, {x1:x1,x2:x2,y1:y1,y2:y2}, true, layer.paddingPx);
 
-					x1 += mount.layers[i].paddingPx.left;
-					x2 -= mount.layers[i].paddingPx.right;
-					y1 += mount.layers[i].paddingPx.top;
-					y2 -= mount.layers[i].paddingPx.bottom;
+					x1 += layer.paddingPx.left;
+					x2 -= layer.paddingPx.right;
+					y1 += layer.paddingPx.top;
+					y2 -= layer.paddingPx.bottom;
 				}
-			}
+			});
 		}
 
 		// fill the image section
@@ -803,23 +797,21 @@ Frame = function(userOptions){
 				right:0
 			};
 		// loop through each mount layer and calculate its padding
-		for(i in mount.layers){
+		$.each(mount.layers, function(i, layer){
 			if(i > 0){
-				imagePadding.left += mount.layers[i].paddingPx.left;
-				imagePadding.right += mount.layers[i].paddingPx.right;
-				imagePadding.top += mount.layers[i].paddingPx.top;
-				imagePadding.bottom += mount.layers[i].paddingPx.bottom;
+				imagePadding.left += layer.paddingPx.left;
+				imagePadding.right += layer.paddingPx.right;
+				imagePadding.top += layer.paddingPx.top;
+				imagePadding.bottom += layer.paddingPx.bottom;
 			}
-		}
+		});
 
 		// loop through and output the photos
 		var count = 0,	// the image count (for referencing photos)
 			yOffset = -(height/2) + mountLayer.paddingPx.top;
-		for(i in mount.sections){
-			var row = mount.sections[i],
-				rowHeight = 0;
-
-			var xOffset = 0;
+		$.each(mount.sections, function(i, row){
+			var rowHeight = 0,
+				xOffset = 0;
 			if(row.length == 1){
 				// only one picture in this row - horizontally center it
 
@@ -831,17 +823,17 @@ Frame = function(userOptions){
 				xOffset = -(width/2) + mountLayer.paddingPx.left;
 			}
 
-			for(var j in row){
-				drawImageBlock(row[j].widthPx, row[j].heightPx, xOffset, yOffset, photos[count]);
+			$.each(row, function(j, column){
+				drawImageBlock(column.widthPx, column.heightPx, xOffset, yOffset, photos[count]);
 
-				xOffset += row[j].widthPx + mount.imagePaddingPx.column + imagePadding.left + imagePadding.right;
+				xOffset += column.widthPx + mount.imagePaddingPx.column + imagePadding.left + imagePadding.right;
 				count++;
 
-				rowHeight = (row[j].heightPx > rowHeight) ? row[j].heightPx : rowHeight;
-			}
+				rowHeight = (column.heightPx > rowHeight) ? column.heightPx : rowHeight;
+			});
 
 			yOffset += rowHeight + mount.imagePaddingPx.row + imagePadding.top + imagePadding.bottom;
-		}
+		});
 
 
 		// draw the frame rim
