@@ -166,11 +166,11 @@ Frame = function(userOptions){
 			};
 
 			if(typeof FlashCanvas != 'undefined'){
-				frame.file.src = 'frames/' + imageName;
+				frame.file.src = imageName;
 				ctx.loadImage(frame.file, imageLoadCallback());
 			}else{
 				frame.file.onload = imageLoadCallback;
-				frame.file.src = 'frames/' + imageName;
+				frame.file.src = imageName;
 			}
 		}
 
@@ -186,11 +186,11 @@ Frame = function(userOptions){
 			};
 
 			if(typeof FlashCanvas != 'undefined'){
-				slip.file.src = 'frames/' + imageName;
+				slip.file.src = imageName;
 				ctx.loadImage(slip.file, imageLoadCallback());
 			}else{
 				slip.file.onload = imageLoadCallback;
-				slip.file.src = 'frames/' + imageName;
+				slip.file.src = imageName;
 			}
 		}
 
@@ -208,11 +208,11 @@ Frame = function(userOptions){
 					};
 
 					if(typeof FlashCanvas != 'undefined'){
-						layer.file.src = 'frames/' + imageName;
+						layer.file.src = imageName;
 						ctx.loadImage(layer.file, imageLoadCallback());
 					}else{
 						layer.file.onload = imageLoadCallback;
-						layer.file.src = 'frames/' + imageName;
+						layer.file.src = imageName;
 					}
 				}else{
 					imageCount--;
@@ -224,7 +224,11 @@ Frame = function(userOptions){
 		$.each(photos, function(i, photo){
 			if((typeof photo == 'string') && (photo != '')){
 				imageName = photo;
-				photo = new Image();
+
+				// photo is a string, so convert original reference to object
+				photos[i] = new Image();
+				photo = photos[i];
+
 				photo.loadCount = 0;
 
 				// error handler
@@ -233,11 +237,11 @@ Frame = function(userOptions){
 				};
 
 				if(typeof FlashCanvas != 'undefined'){
-					photo.src = 'frames/' + imageName;
+					photo.src = imageName;
 					ctx.loadImage(photo, imageLoadCallback());
 				}else{
 					photo.onload = imageLoadCallback;
-					photo.src = 'frames/' + imageName;
+					photo.src = imageName;
 				}
 			}else{
 				imageCount--;
@@ -760,6 +764,7 @@ Frame = function(userOptions){
 		ctx.fillRect(x1, y1, width, height);
 
 		// draw the image (if one exists)
+		console.log(image);
 		if(typeof image == 'object'){
 			ctx.drawImage(image, x1, y1, width, height);
 		}
