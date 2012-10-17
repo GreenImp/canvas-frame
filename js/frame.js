@@ -88,7 +88,12 @@ Frame = function(userOptions){
 				// jQuery doesn't exist - assume canvas is an ID
 				canvas = document.getElementById(options.canvas);
 			}
-			ctx = canvas.getContext('2d');
+
+			if(typeof canvas === 'undefined'){
+				return false;
+			}else{
+				ctx = canvas.getContext('2d');
+			}
 		}
 
 		// set the canvas width/height correctly
