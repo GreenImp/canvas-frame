@@ -56,7 +56,8 @@ Frame = function(userOptions){
 			pxPerMM:1,				// how many pixels per millimeter
 			allowZoom:true,			// whether to allow click-to-zoom functionality
 			allowSave:true,			// whether to allow saving to png
-			autoResize:true			// whether to aut-resize the frame to fit the canvas (turning this off could cause the frame to be cropped)
+			autoResize:true,		// whether to aut-resize the frame to fit the canvas (turning this off could cause the frame to be cropped)
+			fileLoadTries:1			// the amount of times to try and load an image (frame, slip, mount, picture etc), if it fails (ie; 404)
 		},
 		options = {};
 
@@ -114,7 +115,7 @@ Frame = function(userOptions){
 		// if allowSave and jquery.contextMenu and canvas2png is included, add our context menu
 		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
 			// add the context menu
-			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
+			$('body').remove('#canvasMenu').append('<ul id="canvasMenu" class="contextMenu">' +
 								'<li class="save"><a href="#save">Save Image</a></li>' +
 							'</ul>');
 			// set up the functionality
@@ -227,21 +228,19 @@ Frame = function(userOptions){
 
 				// photo is a string, so convert original reference to object
 				photos[i] = new Image();
-				photo = photos[i];
-
-				photo.loadCount = 0;
+				photos[i].loadCount = 0;
 
 				// error handler
-				photo.onerror = function(){
-					imageErrorCallback({file:photo});
+				photos[i].onerror = function(){
+					imageErrorCallback({file:photos[i],photoNum:i});
 				};
 
 				if(typeof FlashCanvas != 'undefined'){
-					photo.src = imageName;
-					ctx.loadImage(photo, imageLoadCallback());
+					photos[i].src = imageName;
+					ctx.loadImage(photos[i], imageLoadCallback());
 				}else{
-					photo.onload = imageLoadCallback;
-					photo.src = imageName;
+					photos[i].onload = imageLoadCallback;
+					photos[i].src = imageName;
 				}
 			}else{
 				imageCount--;
@@ -280,11 +279,14 @@ Frame = function(userOptions){
 	 * @return {Boolean}
 	 */
 	var imageErrorCallback = function(file){
-		if(file.file.loadCount >= 3){
+		if(file.file.loadCount >= options.fileLoadTries){
 			// we have reached the max failed attempts
 			// not sure whether we should throw up an error here or just carry on loading
 			// for now, mark it as loaded and set the image to null
 			file.file = null;
+			if(!isNaN(file.photoNum)){
+				photos[file.photoNum] = null;
+			}
 			imageLoadCallback();
 			return false;
 		}
@@ -764,8 +766,7 @@ Frame = function(userOptions){
 		ctx.fillRect(x1, y1, width, height);
 
 		// draw the image (if one exists)
-		console.log(image);
-		if(typeof image == 'object'){
+		if((image !== null) && (typeof image == 'object')){
 			ctx.drawImage(image, x1, y1, width, height);
 		}
 	};
