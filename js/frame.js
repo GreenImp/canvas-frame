@@ -90,6 +90,7 @@ Frame = function(userOptions){
 			}
 
 			if(typeof canvas === 'undefined'){
+				canvas = null;
 				return false;
 			}else{
 				ctx = canvas.getContext('2d');
