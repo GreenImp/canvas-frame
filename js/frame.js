@@ -119,9 +119,9 @@ Frame = function(userOptions){
 
 
 		// if allowSave and jquery.contextMenu and canvas2png is included, add our context menu
-		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
+		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined') && ($('#canvasMenu').length == 0)){
 			// add the context menu
-			$('body').remove('#canvasMenu').append('<ul id="canvasMenu" class="contextMenu">' +
+			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
 								'<li class="save"><a href="#save">Save Image</a></li>' +
 							'</ul>');
 			// set up the functionality
@@ -141,7 +141,7 @@ Frame = function(userOptions){
 					);
 		}else{
 			// ensure that save functionality is disabled
-			$('body #canvasMenu').remove();
+			$('#canvasMenu').remove();
 			$(canvas).destroyContextMenu();
 		}
 
@@ -332,7 +332,10 @@ Frame = function(userOptions){
 			// the frame has mounts - loop through them
 			$.each(mount.layers, function(i, layer){
 				// ensure that its padding is defined as an object
-				layer.padding = (typeof layer.padding == 'object') ? layer.padding : {top:layer.padding, bottom:layer.padding, left:layer.padding, right:layer.padding};
+				layer.padding = (typeof layer.padding == 'object') ?
+									$.extend({top:0, bottom:0, left:0, right:0}, layer.padding)
+									:
+									{top:layer.padding, bottom:layer.padding, left:layer.padding, right:layer.padding};
 
 				layer.paddingPx = {
 					top:layer.padding.top * options.pxPerMM,
@@ -793,7 +796,7 @@ Frame = function(userOptions){
 		}
 
 
-		// draw the images to the mount
+		// ensure that the mount layer exists
 		var mountLayer = mount.layers[0] || {paddingPx:{top:0,bottom:0,left:0,right:0}};
 
 		// calculate the inner frame dimensions
