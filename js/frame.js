@@ -119,26 +119,29 @@ Frame = function(userOptions){
 
 
 		// if allowSave and jquery.contextMenu and canvas2png is included, add our context menu
-		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined') && ($('#canvasMenu').length == 0)){
-			// add the context menu
-			$('body').append('<ul id="canvasMenu" class="contextMenu">' +
-								'<li class="save"><a href="#save">Save Image</a></li>' +
-							'</ul>');
-			// set up the functionality
-			$(canvas)
-					// ensure that canvas doesn't already have contextMenu
-					.destroyContextMenu()
-					// add contextMenu
-					.contextMenu(
-						{
-							menu:'canvasMenu'
-						},
-						function(action, el, pos){
-							if(action == 'save'){
-								Frame.save();
+		if(options.allowSave && jQuery && $.fn.contextMenu && (typeof canvas2png != 'undefined')){
+			// only add the context menu if it doesn't already exist
+			if($('#canvasMenu').length == 0){
+				// add the context menu
+				$('body').append('<ul id="canvasMenu" class="contextMenu">' +
+									'<li class="save"><a href="#save">Save Image</a></li>' +
+								'</ul>');
+				// set up the functionality
+				$(canvas)
+						// ensure that canvas doesn't already have contextMenu
+						.destroyContextMenu()
+						// add contextMenu
+						.contextMenu(
+							{
+								menu:'canvasMenu'
+							},
+							function(action, el, pos){
+								if(action == 'save'){
+									Frame.save();
+								}
 							}
-						}
-					);
+						);
+			}
 		}else{
 			// ensure that save functionality is disabled
 			$('#canvasMenu').remove();
