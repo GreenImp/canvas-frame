@@ -533,7 +533,7 @@ Frame = function(userOptions){
 
 
 		// draw the frame
-		if(file !== null){
+		if((file !== null) && (file.width > 0) && (file.height > 0)){
 			thickness = parseInt(thickness) || 0;
 			var length = 0,	// tracks the current output length of a frame side
 				count = 0,
