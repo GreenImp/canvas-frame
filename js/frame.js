@@ -288,7 +288,7 @@ Frame = function(userOptions){
 	 * @return {Boolean}
 	 */
 	var imageErrorCallback = function(file){
-		if(file.file.loadCount >= options.fileLoadTries){
+		if((file.file === null) || (file.file.loadCount >= options.fileLoadTries)){
 			// we have reached the max failed attempts
 			// not sure whether we should throw up an error here or just carry on loading
 			// for now, mark it as loaded and set the image to null
