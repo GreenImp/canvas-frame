@@ -624,7 +624,7 @@ Frame = function(userOptions){
 				ctx.fillRect(coords.x1, coords.y1, coords.x2-coords.x1, coords.y2-coords.y1);
 			}
 
-			if(mountLayer.file != null){
+			if((mountLayer.file != null) && (mountLayer.file.width > 0) && (mountLayer.file.height > 0)){
 				ctx.save();
 				ctx.beginPath();
 				ctx.moveTo(coords.x1, coords.y1);
