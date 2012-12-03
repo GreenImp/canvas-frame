@@ -160,7 +160,24 @@ Frame = function(userOptions){
 			hasSlip = (typeof slip.file == 'string') && (slip.file != '');
 
 		// count images we need to load
-		imageCount = (hasFrame ? 1 : 0) + (hasSlip ? 1 : 0) + mount.layers.length + photos.length;
+		//imageCount = (hasFrame ? 1 : 0) + (hasSlip ? 1 : 0) + mount.layers.length + photos.length;
+		imageCount = (hasFrame ? 1 : 0) + (hasSlip ? 1 : 0);
+		if(mount.layers.length > 0){
+			$.each(mount.layers, function(){
+				imageCount += ((typeof this.file == 'string') && (this.file != '')) ? 1 : 0;
+			});
+		}
+		$.each(photos, function(i, photo){
+			imageCount += ((typeof photo == 'string') && (photo != '')) ? 1 : 0;
+		});
+
+
+		if(imageCount <= 0){
+			postLoadInit();
+			return;
+		}
+
+
 		// count images that have been loaded
 		loaded = 0;
 
@@ -224,8 +241,6 @@ Frame = function(userOptions){
 						layer.file.onload = imageLoadCallback;
 						layer.file.src = imageName;
 					}
-				}else{
-					imageCount--;
 				}
 			});
 		}
@@ -251,14 +266,8 @@ Frame = function(userOptions){
 					photos[i].onload = imageLoadCallback;
 					photos[i].src = imageName;
 				}
-			}else{
-				imageCount--;
 			}
 		});
-
-		if(imageCount <= 0){
-			postLoadInit();
-		}
 	};
 
 	/**
@@ -504,6 +513,8 @@ Frame = function(userOptions){
 	 * @param shadow
 	 */
 	var drawFrame = function(x1, y1, x2, y2, thickness, file, fillColor, shadow){
+		thickness = parseInt(thickness) || 0;
+
 		// draw the drop shadow
 		if(shadow !== false){
 			var offset = (Math.min(frame.width, frame.height) > 300) ? 2 : 1;
@@ -512,7 +523,7 @@ Frame = function(userOptions){
 			ctx.shadowBlur = 4;						// Sets the shadow blur size
 			ctx.shadowColor = 'rgba(0, 0, 0, 1)';	// Sets the shadow color
 			ctx.lineWidth = 1;
-			ctx.strokeStyle = '#f00';
+			ctx.strokeStyle = 'rgba(255,255,255,1)';
 
 			ctx.beginPath();
 			offset = thickness/2
@@ -533,8 +544,7 @@ Frame = function(userOptions){
 
 
 		// draw the frame
-		if((file !== null) && (file.width > 0) && (file.height > 0)){
-			thickness = parseInt(thickness) || 0;
+		if(file && (file.width > 0) && (file.height > 0)){
 			var length = 0,	// tracks the current output length of a frame side
 				count = 0,
 				aspectRatio = file.width / file.height,
