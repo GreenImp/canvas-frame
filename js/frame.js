@@ -5,10 +5,12 @@
  */
 
 Frame = function(userOptions){
-	// disable right-click context menu for flashcanvas
-	window.FlashCanvasOptions = {
-		disableContextMenu:true
-	};
+	if(typeof FlashCanvas != 'undefined'){
+		// disable right-click context menu for flashcanvas
+		window.FlashCanvasOptions = {
+			disableContextMenu:true
+		};
+	}
 
 	var $ = jQuery,
 		Frame = this,
@@ -549,6 +551,7 @@ Frame = function(userOptions){
 				count = 0,
 				aspectRatio = file.width / file.height,
 				frameHeight = Math.floor(thickness / aspectRatio);
+			frameHeight = (frameHeight <= 1) ? 2 : frameHeight;
 
 			ctx.save();
 			ctx.beginPath();
