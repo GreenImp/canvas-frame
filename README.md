@@ -1,0 +1,1 @@
+This is a HTML5 canvas-based Frame renderer, for dynamically creating picture frames around images.
